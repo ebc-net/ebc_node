@@ -7,7 +7,7 @@ namespace NET
 NetEngine::NetEngine(const NodeId _id, const bool _isServer):self(_id), isServer(_isServer)
 {
    local_addr.sin_addr.s_addr = INADDR_ANY;
-   local_addr.sin_port = htons(NODE_PORT);
+   local_addr.sin_port = 0;
    local_addr.sin_family = AF_INET;
 }
 
@@ -163,6 +163,14 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)
        return ;
     }
 
+    int sock_len = sizeof(local_addr);
+    if(UDT::getsockname(boot_sock, (struct sockaddr *)&local_addr, &sock_len) < 0)
+    {
+        std::cout<<"UDT getsockname error"<<UDT::getlasterror().getErrorMessage()<<std::endl;
+        return ;
+    }
+    std::cout<<"local port = "<<ntohs(local_addr.sin_port)<<std::endl;
+
 
     boot_thread_flag = true;
     boot_thread = std::thread([&, srv_addr]()  //lambda 表达式
@@ -194,21 +202,6 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)
             //ret = UDT::epoll_wait(epollFd, &readfds, &writefds, 1*1000);
             ret = UDT::epoll_wait(epollFd, &readfds, &writefds, &errfds, 5*1000);
             //std::cout<<"ret = "<<ret<<std::endl;
-            msgPack helloMsg(self.getId());
-            char hello_buf[64]="";
-            char msg_buf[1024]="";
-            static int count = 0;
-            sprintf(hello_buf, "hello count = %d", count++);
-            for(auto it:peerNode)
-            {
-                if(count%5)
-                    continue;
-                auto& peer = it.second;
-                ret = helloMsg.pack(config::MsgType::REP, hello_buf, msg_buf, sizeof(msg_buf), config::MsgSubType::DATA, peer.getId());
-                if(ret < 0)
-                    break;
-                UDT::send(peer.getSock(), msg_buf, ret, 0);
-            }
             if(ret < -1)
             {
                 std::cout<<"UDT epoll_wait error"<<UDT::getlasterror().getErrorMessage()<<std::endl;
@@ -348,9 +341,17 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)
 
 }
 
-void NetEngine::printNodesInfo()
+void NetEngine::printNodesInfo(int type)
 {
     std::cout<<"PEER INFO :"<<std::endl;
+    if(type == 1)
+    {
+        std::cout<<"online count = "<<peerNode.size()<<std::endl;
+        for(auto &node:peerNode)
+            Node::printNodeId(node.second.getId());
+
+        return ;
+    }
     for(auto &node:peerNode)
     {
         Node::printNode(node.second);
@@ -364,6 +365,31 @@ void NetEngine::printNodesInfo()
             Node::printNode(node.second);
         }
     }
+}
+
+void NetEngine::sendHello()
+{
+    std::thread test = std::thread([&]()
+    {
+        while(boot_thread_flag)
+        {
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+            msgPack helloMsg(self.getId());
+            char hello_buf[64]="";
+            char msg_buf[1024]="";
+            static int count = 0;
+            sprintf(hello_buf, "hello count = %d", count++);
+            for(auto it:peerNode)
+            {
+                auto& peer = it.second;
+                int ret = helloMsg.pack(config::MsgType::REP, hello_buf, msg_buf, sizeof(msg_buf), config::MsgSubType::DATA, peer.getId());
+                UDT::send(peer.getSock(), msg_buf, ret, 0);
+            }
+        }
+
+    });
+
+    test.detach();
 }
 
 void NetEngine::setUdtOpt(const UDTSOCKET &sock)
@@ -410,7 +436,7 @@ int NetEngine::getReadableByte(const UDTSOCKET &sock)
 
 void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)
 {
-    char buf[1024]="";
+    char buf[6*1024]="";
     msgPack recv_msg(self.getId());
     int ret = UDT::recv(sock, buf, sizeof(buf), 0);
     //int ret = UDT::recvmsg(sock, buf, sizeof(buf));

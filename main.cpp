@@ -45,6 +45,9 @@ int main(int argc, char *argv[])
             case '0':
                 net.printNodesInfo();
                 break;
+            case '1':
+                net.printNodesInfo(1);
+                break;
             case '\n':
                 break;
             default:
@@ -54,6 +57,8 @@ int main(int argc, char *argv[])
         }
     }
     );
+
+    net.sendHello();
 
     cmd.join();
     return 0;

@@ -19,7 +19,8 @@ public:
     void startServer();
     void startClient(const std::string ip=SUPER_NODE, const uint16_t port=SRV_PORT);
 
-    void printNodesInfo();   // 打印出所有节点信息
+    void printNodesInfo(int type = 0);   // 打印出所有节点信息
+    void sendHello();
 
 private:
     void setUdtOpt(const UDTSOCKET &sock);   //设置socket的非阻塞以及发送/接收缓冲器的大小
