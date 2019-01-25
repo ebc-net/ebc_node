@@ -18,13 +18,13 @@ DEFINES += ON_QT  #区分linux上的服务器程序与QT上的程序
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-        main.cpp \
-    msg.pb.cc \
-    node.cpp \
-    bucket.cpp \
-    netengine.cpp \
-    msgpack.cpp \
-    utils.cpp
+    src/main.cpp \
+    src/msg.pb.cc \
+    src/node.cpp \
+    src/bucket.cpp \
+    src/netengine.cpp \
+    src/msgpack.cpp \
+    src/utils.cpp
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -34,7 +34,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 
 win32{
-    LIBS += -L$$PWD/lib/ -lprotobuf-lite -ludt -lebcCryptoLib
+    LIBS += -L$$PWD/lib/win -lprotobuf-lite -ludt -lebcCryptoLib
     LIBS += -lws2_32 -lwsock32
 }
 
