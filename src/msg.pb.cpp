@@ -7,6 +7,7 @@
 
 #include <google/protobuf/stubs/common.h>
 #include <google/protobuf/stubs/port.h>
+#include <google/protobuf/stubs/once.h>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/wire_format_lite_inl.h>
 #include <google/protobuf/io/zero_copy_stream_impl_lite.h>
@@ -15,11 +16,6 @@
 #include "third_party/protobuf/version.h"
 #endif
 // @@protoc_insertion_point(includes)
-
-namespace protobuf_msg_2eproto {
-extern PROTOBUF_INTERNAL_EXPORT_protobuf_msg_2eproto ::google::protobuf::internal::SCCInfo<0> scc_info_EbcNode;
-extern PROTOBUF_INTERNAL_EXPORT_protobuf_msg_2eproto ::google::protobuf::internal::SCCInfo<1> scc_info_EbcNodes;
-}  // namespace protobuf_msg_2eproto
 namespace config {
 class EbcNodeDefaultTypeInternal {
  public:
@@ -40,9 +36,14 @@ class EbcMsgDefaultTypeInternal {
 } _EbcMsg_default_instance_;
 }  // namespace config
 namespace protobuf_msg_2eproto {
-static void InitDefaultsEbcNode() {
+void InitDefaultsEbcNodeImpl() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
   {
     void* ptr = &::config::_EbcNode_default_instance_;
     new (ptr) ::config::EbcNode();
@@ -51,12 +52,20 @@ static void InitDefaultsEbcNode() {
   ::config::EbcNode::InitAsDefaultInstance();
 }
 
-::google::protobuf::internal::SCCInfo<0> scc_info_EbcNode =
-    {{ATOMIC_VAR_INIT(::google::protobuf::internal::SCCInfoBase::kUninitialized), 0, InitDefaultsEbcNode}, {}};
+void InitDefaultsEbcNode() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsEbcNodeImpl);
+}
 
-static void InitDefaultsEbcNodes() {
+void InitDefaultsEbcNodesImpl() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  protobuf_msg_2eproto::InitDefaultsEbcNode();
   {
     void* ptr = &::config::_EbcNodes_default_instance_;
     new (ptr) ::config::EbcNodes();
@@ -65,13 +74,20 @@ static void InitDefaultsEbcNodes() {
   ::config::EbcNodes::InitAsDefaultInstance();
 }
 
-::google::protobuf::internal::SCCInfo<1> scc_info_EbcNodes =
-    {{ATOMIC_VAR_INIT(::google::protobuf::internal::SCCInfoBase::kUninitialized), 1, InitDefaultsEbcNodes}, {
-      &protobuf_msg_2eproto::scc_info_EbcNode.base,}};
+void InitDefaultsEbcNodes() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsEbcNodesImpl);
+}
 
-static void InitDefaultsEbcMsg() {
+void InitDefaultsEbcMsgImpl() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  protobuf_msg_2eproto::InitDefaultsEbcNodes();
   {
     void* ptr = &::config::_EbcMsg_default_instance_;
     new (ptr) ::config::EbcMsg();
@@ -80,14 +96,9 @@ static void InitDefaultsEbcMsg() {
   ::config::EbcMsg::InitAsDefaultInstance();
 }
 
-::google::protobuf::internal::SCCInfo<1> scc_info_EbcMsg =
-    {{ATOMIC_VAR_INIT(::google::protobuf::internal::SCCInfoBase::kUninitialized), 1, InitDefaultsEbcMsg}, {
-      &protobuf_msg_2eproto::scc_info_EbcNodes.base,}};
-
-void InitDefaults() {
-  ::google::protobuf::internal::InitSCC(&scc_info_EbcNode.base);
-  ::google::protobuf::internal::InitSCC(&scc_info_EbcNodes.base);
-  ::google::protobuf::internal::InitSCC(&scc_info_EbcMsg.base);
+void InitDefaultsEbcMsg() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsEbcMsgImpl);
 }
 
 }  // namespace protobuf_msg_2eproto
@@ -132,14 +143,16 @@ const int EbcNode::kPortNatFieldNumber;
 
 EbcNode::EbcNode()
   : ::google::protobuf::MessageLite(), _internal_metadata_(NULL) {
-  ::google::protobuf::internal::InitSCC(
-      &protobuf_msg_2eproto::scc_info_EbcNode.base);
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_msg_2eproto::InitDefaultsEbcNode();
+  }
   SharedCtor();
   // @@protoc_insertion_point(constructor:config.EbcNode)
 }
 EbcNode::EbcNode(const EbcNode& from)
   : ::google::protobuf::MessageLite(),
-      _internal_metadata_(NULL) {
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
   _internal_metadata_.MergeFrom(from._internal_metadata_);
   id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   if (from.id().size() > 0) {
@@ -156,6 +169,7 @@ void EbcNode::SharedCtor() {
   ::memset(&ip_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&port_nat_) -
       reinterpret_cast<char*>(&ip_)) + sizeof(port_nat_));
+  _cached_size_ = 0;
 }
 
 EbcNode::~EbcNode() {
@@ -168,13 +182,22 @@ void EbcNode::SharedDtor() {
 }
 
 void EbcNode::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
 }
 const EbcNode& EbcNode::default_instance() {
-  ::google::protobuf::internal::InitSCC(&protobuf_msg_2eproto::scc_info_EbcNode.base);
+  ::protobuf_msg_2eproto::InitDefaultsEbcNode();
   return *internal_default_instance();
 }
 
+EbcNode* EbcNode::New(::google::protobuf::Arena* arena) const {
+  EbcNode* n = new EbcNode;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
 
 void EbcNode::Clear() {
 // @@protoc_insertion_point(message_clear_start:config.EbcNode)
@@ -201,7 +224,7 @@ bool EbcNode::MergePartialFromCodedStream(
       &unknown_fields_output, false);
   // @@protoc_insertion_point(parse_start:config.EbcNode)
   for (;;) {
-    ::std::pair<::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
@@ -320,7 +343,9 @@ size_t EbcNode::ByteSizeLong() const {
   }
 
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
-  SetCachedSize(cached_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
   return total_size;
 }
 
@@ -365,11 +390,11 @@ void EbcNode::Swap(EbcNode* other) {
 }
 void EbcNode::InternalSwap(EbcNode* other) {
   using std::swap;
-  id_.Swap(&other->id_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
-    GetArenaNoVirtual());
+  id_.Swap(&other->id_);
   swap(ip_, other->ip_);
   swap(port_nat_, other->port_nat_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
 }
 
 ::std::string EbcNode::GetTypeName() const {
@@ -387,20 +412,23 @@ const int EbcNodes::kEbcNodesFieldNumber;
 
 EbcNodes::EbcNodes()
   : ::google::protobuf::MessageLite(), _internal_metadata_(NULL) {
-  ::google::protobuf::internal::InitSCC(
-      &protobuf_msg_2eproto::scc_info_EbcNodes.base);
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_msg_2eproto::InitDefaultsEbcNodes();
+  }
   SharedCtor();
   // @@protoc_insertion_point(constructor:config.EbcNodes)
 }
 EbcNodes::EbcNodes(const EbcNodes& from)
   : ::google::protobuf::MessageLite(),
       _internal_metadata_(NULL),
-      ebcnodes_(from.ebcnodes_) {
+      ebcnodes_(from.ebcnodes_),
+      _cached_size_(0) {
   _internal_metadata_.MergeFrom(from._internal_metadata_);
   // @@protoc_insertion_point(copy_constructor:config.EbcNodes)
 }
 
 void EbcNodes::SharedCtor() {
+  _cached_size_ = 0;
 }
 
 EbcNodes::~EbcNodes() {
@@ -412,13 +440,22 @@ void EbcNodes::SharedDtor() {
 }
 
 void EbcNodes::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
 }
 const EbcNodes& EbcNodes::default_instance() {
-  ::google::protobuf::internal::InitSCC(&protobuf_msg_2eproto::scc_info_EbcNodes.base);
+  ::protobuf_msg_2eproto::InitDefaultsEbcNodes();
   return *internal_default_instance();
 }
 
+EbcNodes* EbcNodes::New(::google::protobuf::Arena* arena) const {
+  EbcNodes* n = new EbcNodes;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
 
 void EbcNodes::Clear() {
 // @@protoc_insertion_point(message_clear_start:config.EbcNodes)
@@ -442,7 +479,7 @@ bool EbcNodes::MergePartialFromCodedStream(
       &unknown_fields_output, false);
   // @@protoc_insertion_point(parse_start:config.EbcNodes)
   for (;;) {
-    ::std::pair<::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
@@ -450,8 +487,7 @@ bool EbcNodes::MergePartialFromCodedStream(
       case 1: {
         if (static_cast< ::google::protobuf::uint8>(tag) ==
             static_cast< ::google::protobuf::uint8>(10u /* 10 & 0xFF */)) {
-          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
-                input, add_ebcnodes()));
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(input, add_ebcnodes()));
         } else {
           goto handle_unusual;
         }
@@ -488,9 +524,7 @@ void EbcNodes::SerializeWithCachedSizes(
   for (unsigned int i = 0,
       n = static_cast<unsigned int>(this->ebcnodes_size()); i < n; i++) {
     ::google::protobuf::internal::WireFormatLite::WriteMessage(
-      1,
-      this->ebcnodes(static_cast<int>(i)),
-      output);
+      1, this->ebcnodes(static_cast<int>(i)), output);
   }
 
   output->WriteRaw((::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()).data(),
@@ -516,7 +550,9 @@ size_t EbcNodes::ByteSizeLong() const {
   }
 
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
-  SetCachedSize(cached_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
   return total_size;
 }
 
@@ -552,8 +588,9 @@ void EbcNodes::Swap(EbcNodes* other) {
 }
 void EbcNodes::InternalSwap(EbcNodes* other) {
   using std::swap;
-  CastToBase(&ebcnodes_)->InternalSwap(CastToBase(&other->ebcnodes_));
+  ebcnodes_.InternalSwap(&other->ebcnodes_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
 }
 
 ::std::string EbcNodes::GetTypeName() const {
@@ -595,14 +632,16 @@ const int EbcMsg::kNodesFieldNumber;
 
 EbcMsg::EbcMsg()
   : ::google::protobuf::MessageLite(), _internal_metadata_(NULL) {
-  ::google::protobuf::internal::InitSCC(
-      &protobuf_msg_2eproto::scc_info_EbcMsg.base);
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_msg_2eproto::InitDefaultsEbcMsg();
+  }
   SharedCtor();
   // @@protoc_insertion_point(constructor:config.EbcMsg)
 }
 EbcMsg::EbcMsg(const EbcMsg& from)
   : ::google::protobuf::MessageLite(),
-      _internal_metadata_(NULL) {
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
   _internal_metadata_.MergeFrom(from._internal_metadata_);
   version_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   if (from.version().size() > 0) {
@@ -644,6 +683,7 @@ void EbcMsg::SharedCtor() {
       reinterpret_cast<char*>(&length_) -
       reinterpret_cast<char*>(&head_)) + sizeof(length_));
   clear_has_body();
+  _cached_size_ = 0;
 }
 
 EbcMsg::~EbcMsg() {
@@ -661,13 +701,22 @@ void EbcMsg::SharedDtor() {
 }
 
 void EbcMsg::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
 }
 const EbcMsg& EbcMsg::default_instance() {
-  ::google::protobuf::internal::InitSCC(&protobuf_msg_2eproto::scc_info_EbcMsg.base);
+  ::protobuf_msg_2eproto::InitDefaultsEbcMsg();
   return *internal_default_instance();
 }
 
+EbcMsg* EbcMsg::New(::google::protobuf::Arena* arena) const {
+  EbcMsg* n = new EbcMsg;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
 
 void EbcMsg::clear_body() {
 // @@protoc_insertion_point(one_of_clear_start:config.EbcMsg)
@@ -716,7 +765,7 @@ bool EbcMsg::MergePartialFromCodedStream(
       &unknown_fields_output, false);
   // @@protoc_insertion_point(parse_start:config.EbcMsg)
   for (;;) {
-    ::std::pair<::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
@@ -959,7 +1008,7 @@ void EbcMsg::SerializeWithCachedSizes(
   // .config.EbcNodes nodes = 11;
   if (has_nodes()) {
     ::google::protobuf::internal::WireFormatLite::WriteMessage(
-      11, this->_internal_nodes(), output);
+      11, *body_.nodes_, output);
   }
 
   output->WriteRaw((::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()).data(),
@@ -1054,7 +1103,9 @@ size_t EbcMsg::ByteSizeLong() const {
     }
   }
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
-  SetCachedSize(cached_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
   return total_size;
 }
 
@@ -1132,12 +1183,9 @@ void EbcMsg::Swap(EbcMsg* other) {
 }
 void EbcMsg::InternalSwap(EbcMsg* other) {
   using std::swap;
-  version_.Swap(&other->version_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
-    GetArenaNoVirtual());
-  src_id_.Swap(&other->src_id_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
-    GetArenaNoVirtual());
-  dst_id_.Swap(&other->dst_id_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
-    GetArenaNoVirtual());
+  version_.Swap(&other->version_);
+  src_id_.Swap(&other->src_id_);
+  dst_id_.Swap(&other->dst_id_);
   swap(head_, other->head_);
   swap(ttl_, other->ttl_);
   swap(id_, other->id_);
@@ -1147,6 +1195,7 @@ void EbcMsg::InternalSwap(EbcMsg* other) {
   swap(body_, other->body_);
   swap(_oneof_case_[0], other->_oneof_case_[0]);
   _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
 }
 
 ::std::string EbcMsg::GetTypeName() const {
@@ -1156,18 +1205,5 @@ void EbcMsg::InternalSwap(EbcMsg* other) {
 
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace config
-namespace google {
-namespace protobuf {
-template<> GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE ::config::EbcNode* Arena::CreateMaybeMessage< ::config::EbcNode >(Arena* arena) {
-  return Arena::CreateInternal< ::config::EbcNode >(arena);
-}
-template<> GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE ::config::EbcNodes* Arena::CreateMaybeMessage< ::config::EbcNodes >(Arena* arena) {
-  return Arena::CreateInternal< ::config::EbcNodes >(arena);
-}
-template<> GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE ::config::EbcMsg* Arena::CreateMaybeMessage< ::config::EbcMsg >(Arena* arena) {
-  return Arena::CreateInternal< ::config::EbcMsg >(arena);
-}
-}  // namespace protobuf
-}  // namespace google
 
 // @@protoc_insertion_point(global_scope)

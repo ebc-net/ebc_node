@@ -37,6 +37,9 @@
 
 #include <map>
 #include <memory>
+#ifndef _SHARED_PTR_H
+#include <google/protobuf/stubs/shared_ptr.h>
+#endif
 #include <string>
 
 #include <google/protobuf/stubs/common.h>
@@ -138,7 +141,7 @@ class FieldGeneratorMap {
   const Descriptor* descriptor_;
   Context* context_;
   ClassNameResolver* name_resolver_;
-  std::vector<std::unique_ptr<FieldGeneratorType>> field_generators_;
+  google::protobuf::scoped_array<google::protobuf::scoped_ptr<FieldGeneratorType> > field_generators_;
 
   GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(FieldGeneratorMap);
 };
@@ -158,14 +161,6 @@ FieldGeneratorMap(const Descriptor* descriptor,
 
 template<>
 FieldGeneratorMap<ImmutableFieldGenerator>::~FieldGeneratorMap();
-
-
-template <>
-FieldGeneratorMap<ImmutableFieldLiteGenerator>::FieldGeneratorMap(
-    const Descriptor* descriptor, Context* context);
-
-template <>
-FieldGeneratorMap<ImmutableFieldLiteGenerator>::~FieldGeneratorMap();
 
 
 // Field information used in FieldGeneartors.

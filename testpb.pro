@@ -19,7 +19,7 @@ DEFINES += ON_QT  #区分linux上的服务器程序与QT上的程序
 
 SOURCES += \
     src/main.cpp \
-    src/msg.pb.cc \
+    src/msg.pb.cpp \
     src/node.cpp \
     src/bucket.cpp \
     src/netengine.cpp \
