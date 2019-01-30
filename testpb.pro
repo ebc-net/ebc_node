@@ -19,7 +19,7 @@ DEFINES += ON_QT  #区分linux上的服务器程序与QT上的程序
 
 SOURCES += \
     src/main.cpp \
-    src/msg.pb.cc \
+    src/msg.pb.cpp \
     src/node.cpp \
     src/bucket.cpp \
     src/netengine.cpp \
@@ -32,14 +32,18 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 
-
+unix{
+    ANDROID_EXTRA_LIBS = $$PWD/lib/android/libprotobuf-lite.so $$PWD/lib/android/libandUdt.so  $$PWD/lib/android/libebcCryptoLib.so
+    LIBS += -L$$PWD/lib/android -lprotobuf-lite -landUdt -lebcCryptoLib
+}
 win32{
     LIBS += -L$$PWD/lib/win -lprotobuf-lite -ludt -lebcCryptoLib
     LIBS += -lws2_32 -lwsock32
 }
 
-unix {
-}
+
+
+
 
 INCLUDEPATH += $$PWD/include
 DEPENDPATH += $$PWD/include

@@ -50,10 +50,10 @@ namespace cpp {
 class PaddingOptimizer : public MessageLayoutHelper {
  public:
   PaddingOptimizer() {}
-  ~PaddingOptimizer() override {}
+  ~PaddingOptimizer() {}
 
   void OptimizeLayout(std::vector<const FieldDescriptor*>* fields,
-                      const Options& options) override;
+                      const Options& options);
 };
 
 }  // namespace cpp

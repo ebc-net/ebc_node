@@ -55,6 +55,9 @@
 #define GOOGLE_PROTOBUF_DESCRIPTOR_H__
 
 #include <memory>
+#ifndef _SHARED_PTR_H
+#include <google/protobuf/stubs/shared_ptr.h>
+#endif
 #include <set>
 #include <string>
 #include <vector>
@@ -84,7 +87,6 @@ class DescriptorPool;
 
 // Defined in descriptor.proto
 class DescriptorProto;
-class DescriptorProto_ExtensionRange;
 class FieldDescriptorProto;
 class OneofDescriptorProto;
 class EnumDescriptorProto;
@@ -337,9 +339,6 @@ class LIBPROTOBUF_EXPORT Descriptor {
   // extensions.
   struct ExtensionRange {
     typedef ExtensionRangeOptions OptionsType;
-
-    // See Descriptor::CopyTo().
-    void CopyTo(DescriptorProto_ExtensionRange* proto) const;
 
     int start;  // inclusive
     int end;    // exclusive
@@ -1803,7 +1802,7 @@ class LIBPROTOBUF_EXPORT DescriptorPool {
   // This class contains a lot of hash maps with complicated types that
   // we'd like to keep out of the header.
   class Tables;
-  std::unique_ptr<Tables> tables_;
+  google::protobuf::scoped_ptr<Tables> tables_;
 
   bool enforce_dependencies_;
   bool lazily_build_dependencies_;
