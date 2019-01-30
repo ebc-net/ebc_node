@@ -70,14 +70,14 @@ class LIBPROTOBUF_EXPORT FieldMaskUtil {
   // Checks whether the given path is valid for type T.
   template <typename T>
   static bool IsValidPath(StringPiece path) {
-    return GetFieldDescriptors(T::descriptor(), path, nullptr);
+    return GetFieldDescriptors(T::descriptor(), path, NULL);
   }
 
   // Checks whether the given FieldMask is valid for type T.
   template <typename T>
   static bool IsValidFieldMask(const FieldMask& mask) {
     for (int i = 0; i < mask.paths_size(); ++i) {
-      if (!GetFieldDescriptors(T::descriptor(), mask.paths(i), nullptr))
+      if (!GetFieldDescriptors(T::descriptor(), mask.paths(i), NULL))
         return false;
     }
     return true;
@@ -94,13 +94,6 @@ class LIBPROTOBUF_EXPORT FieldMaskUtil {
   // Creates a FieldMask with all fields of type T. This FieldMask only
   // contains fields of T but not any sub-message fields.
   template <typename T>
-  static FieldMask GetFieldMaskForAllFields() {
-    FieldMask out;
-    InternalGetFieldMaskForAllFields(T::descriptor(), &out);
-    return out;
-  }
-  template <typename T>
-  PROTOBUF_RUNTIME_DEPRECATED("Use *out = GetFieldMaskForAllFields() instead")
   static void GetFieldMaskForAllFields(FieldMask* out) {
     InternalGetFieldMaskForAllFields(T::descriptor(), out);
   }
@@ -129,8 +122,6 @@ class LIBPROTOBUF_EXPORT FieldMaskUtil {
 
   // Returns true if path is covered by the given FieldMask. Note that path
   // "foo.bar" covers all paths like "foo.bar.baz", "foo.bar.quz.x", etc.
-  // Also note that parent paths are not covered by explicit child path, i.e.
-  // "foo.bar" does NOT cover "foo", even if "bar" is the only child.
   static bool IsPathInFieldMask(StringPiece path, const FieldMask& mask);
 
   class MergeOptions;
