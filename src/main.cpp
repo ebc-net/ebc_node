@@ -10,22 +10,28 @@
 #include "netengine.h"
 #include "ebcCryptoLib.h"
 
+
 #ifdef ON_QT
 #include <QCoreApplication>
+#include <QGuiApplication>
+#include <QQmlApplicationEngine>
 #endif
-
 
 int main(int argc, char *argv[])
 {
 #ifdef ON_QT
-    QCoreApplication a(argc, argv);
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    QGuiApplication app(argc, argv);
+    QQmlApplicationEngine engine;
+    engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
+    if (engine.rootObjects().isEmpty())
+        return -1;
 #endif
-    NET::NodeId id;
 
+    NET::NodeId id;
     ebcCryptoLib cl;
     cl.randomNbytes(id.data(), 20);
     NET::Node::printNodeId(id);
-
     NET::NetEngine net(id);
     net.startClient();
 
@@ -60,7 +66,7 @@ int main(int argc, char *argv[])
 
     net.sendHello();
 
-    cmd.join();
-    return 0;
+    cmd.detach();
+    return app.exec();
 }
 
