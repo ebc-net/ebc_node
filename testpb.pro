@@ -38,6 +38,13 @@ win32{
     LIBS += -lws2_32 -lwsock32
 }
 
+macx{
+    LIBS += -L$$PWD/lib/mac -lprotobuf-lite -ludt -lebcCryptoLib
+}
+ios{
+    LIBS += -L$$PWD/lib/ios -lprotobuf-lite -ludt -lebcCryptoLib
+}
+
 unix {
 }
 
