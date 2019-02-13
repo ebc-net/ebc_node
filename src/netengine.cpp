@@ -1,6 +1,9 @@
 #include "netengine.h"
 #include <iostream>
 #include <cstring>
+#ifdef ON_QT
+#include <QtGlobal>
+#endif
 
 namespace NET
 {
@@ -419,6 +422,24 @@ void NetEngine::setUdtOpt(const UDTSOCKET &sock)
         std::cout<<"UDT set RCVBUF fail"<<UDT::getlasterror().getErrorMessage()<<std::endl;
         return ;
     }
+
+#ifdef Q_OS_MAC
+
+    int s_size = sizeof(int);
+    if(UDT::getsockopt(sock, 0, UDP_RCVBUF, &size, &s_size) < 0)
+    {
+        std::cout<<"UDT set RCVBUF fail"<<UDT::getlasterror().getErrorMessage()<<std::endl;
+        return ;
+    }
+    std::cout<<"udp buf size = "<<size<<std::endl;
+
+    size = 2*1024*1024;
+    if(UDT::setsockopt(sock, 0, UDP_RCVBUF, &size, sizeof(size)) < 0)
+    {
+        std::cout<<"UDT set RCVBUF fail"<<UDT::getlasterror().getErrorMessage()<<std::endl;
+        return ;
+    }
+#endif
 }
 
 int NetEngine::getReadableByte(const UDTSOCKET &sock)

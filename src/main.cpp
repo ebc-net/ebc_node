@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
     NET::NetEngine net(id);
     net.startClient();
 
-
+#ifndef ON_QT
     std::thread cmd= std::thread([&net]()
     {
         //接收用户输入命令线程
@@ -67,6 +67,9 @@ int main(int argc, char *argv[])
     net.sendHello();
 
     cmd.detach();
+    return 0;
+#else
     return app.exec();
+#endif
 }
 
