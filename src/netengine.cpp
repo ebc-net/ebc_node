@@ -38,8 +38,8 @@ void NetEngine::startServer()
    [&]()
    {
        std::cout<<"server thread : "<<std::this_thread::get_id()<<std::endl;
-       UDTSOCKET srv = UDT::socket(AF_INET, SOCK_STREAM, 0);
-       //UDTSOCKET srv = UDT::socket(AF_INET, SOCK_DGRAM, 0);
+       //UDTSOCKET srv = UDT::socket(AF_INET, SOCK_STREAM, 0);
+       UDTSOCKET srv = UDT::socket(AF_INET, SOCK_DGRAM, 0);
        UDTSOCKET cli;
 
         int epollFd = UDT::epoll_create();
@@ -142,8 +142,8 @@ void NetEngine::startServer()
 
 void NetEngine::startClient(const std::string ip, const uint16_t port)
 {
-   boot_sock = UDT::socket(AF_INET, SOCK_STREAM, 0);
-   //boot_sock = UDT::socket(AF_INET, SOCK_DGRAM, 0);
+   //boot_sock = UDT::socket(AF_INET, SOCK_STREAM, 0);
+   boot_sock = UDT::socket(AF_INET, SOCK_DGRAM, 0);
    if(boot_sock < 0)
    {
        std::cout<<"UDT socket error"<<UDT::getlasterror().getErrorMessage()<<std::endl;
@@ -283,9 +283,8 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)
                     std::cout<<"msg len = "<<msg_len;
                     //memset(buf, 0, sizeof(buf));
                     //sprintf(buf, "hello");
-                    //std::cout<<"  send len"<<UDT::sendmsg(sock, buf, 5)<<std::endl;
-                    std::cout<<"  send len"<<UDT::send(sock, buf, msg_len, 0)<<std::endl;
-                    //std::cout<<"  send len"<<UDT::sendmsg(sock, buf, msg_len)<<std::endl;
+                    //std::cout<<"  send len"<<UDT::send(sock, buf, msg_len, 0)<<std::endl;
+                    std::cout<<"  send len"<<UDT::sendmsg(sock, buf, msg_len)<<std::endl;
                 }
                 else
                 {
@@ -383,7 +382,8 @@ void NetEngine::sendHello()
             {
                 auto& peer = it.second;
                 int ret = helloMsg.pack(config::MsgType::REP, hello_buf, msg_buf, sizeof(msg_buf), config::MsgSubType::DATA, peer.getId());
-                UDT::send(peer.getSock(), msg_buf, ret, 0);
+                UDT::sendmsg(peer.getSock(), msg_buf, ret);
+                //UDT::send(peer.getSock(), msg_buf, ret, 0);
             }
         }
 
@@ -438,8 +438,8 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)
 {
     char buf[6*1024]="";
     msgPack recv_msg(self.getId());
-    int ret = UDT::recv(sock, buf, sizeof(buf), 0);
-    //int ret = UDT::recvmsg(sock, buf, sizeof(buf));
+    //int ret = UDT::recv(sock, buf, sizeof(buf), 0);
+    int ret = UDT::recvmsg(sock, buf, sizeof(buf));
     std::cout<<"recv ret = "<<ret<<std::endl;
     if(ret<0)
     {
@@ -484,7 +484,8 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)
                 tmp->set_port_nat(comPortNat(node.second.getAddr().getIPv4().sin_port, node.second.getNatType()));
 
                 //通知该节点：新节点上线
-                UDT::send(node.second.getSock(), buf, ret, 0);
+                UDT::sendmsg(node.second.getSock(), buf, ret);
+                //UDT::send(node.second.getSock(), buf, ret, 0);
             }
             addClientNode(msg.src_id(), clientInfo, nat, sock);
         }
@@ -495,8 +496,8 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)
         ret = recv_msg.pack(config::MsgType::REP, &nodes, buf, sizeof(buf), config::MsgSubType::NODE); //NodeId 没有传，因为string 转array没实现，注意!!
         if(ret < 0)
             return ;
-        //UDT::sendmsg(sock, buf, ret);
-        UDT::send(sock, buf, ret, 0);
+        UDT::sendmsg(sock, buf, ret);
+        //UDT::send(sock, buf, ret, 0);
 
         break;
     }
