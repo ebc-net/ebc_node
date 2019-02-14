@@ -42,7 +42,9 @@ ios{
     LIBS += -L$$PWD/lib/ios -lprotobuf-lite -ludt -lebcCryptoLib
 }
 
-unix {
+unix{
+    ANDROID_EXTRA_LIBS = $$PWD/lib/android/libprotobuf-lite.so $$PWD/lib/android/libudt.so  $$PWD/lib/android/libebcCryptoLib.so
+    LIBS += -L$$PWD/lib/android -lprotobuf-lite -ludt -lebcCryptoLib
 }
 
 INCLUDEPATH += $$PWD/include
