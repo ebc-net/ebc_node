@@ -33,9 +33,9 @@ int main(int argc, char *argv[])
     cl.randomNbytes(id.data(), 20);
     NET::Node::printNodeId(id);
     NET::NetEngine net(id);
-    net.startClient();
 
 #ifndef ON_QT
+    net.startServer();
     std::thread cmd= std::thread([&net]()
     {
         //接收用户输入命令线程
@@ -66,9 +66,10 @@ int main(int argc, char *argv[])
 
     net.sendHello();
 
-    cmd.detach();
+    cmd.join();
     return 0;
 #else
+    net.startClient();
     return app.exec();
 #endif
 }
