@@ -1,6 +1,7 @@
 #include <iostream>
 #include "utils.h"
 #include "sockaddr.h"
+#include<QsLog.h>
 #ifndef WIN32
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -24,7 +25,7 @@ SockAddr::resolve(const std::string& host, const std::string& service)
     addrinfo* info = nullptr;
     int rc = getaddrinfo(host.c_str(), service.empty() ? nullptr : service.c_str(), &hints, &info);
     if(rc != 0)
-        std::cout<<"resolve host error: "<<host<<std::endl;
+       QLOG_ERROR()<<"resolve host error: ";
 
     addrinfo* infop = info;
     while (infop) {
@@ -41,15 +42,15 @@ void print_addr(const sockaddr* sa, socklen_t slen)
     char sbuf[NI_MAXSERV];
     if (!getnameinfo(sa, slen, hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV)) {
         if (sa->sa_family == AF_INET6)
-            std::cout<<"[ "<<hbuf<<" ]";
+            QLOG_INFO()<<"[ "<<hbuf<<" ]";
         else
-            std::cout<<hbuf;
+            QLOG_INFO()<<hbuf;
         if (std::strcmp(sbuf, "0"))
-            std::cout<< ":" << sbuf<<std::endl;
+            QLOG_INFO()<< ":" << sbuf;
         else
-            std::cout<<std::endl;
+            QLOG_INFO();
     } else
-        std::cout<< "[invalid address]"<<std::endl;
+        QLOG_INFO()<< "[invalid address]";
 }
 
 void print_addr(const SockAddr &sa)

@@ -21,7 +21,8 @@ SOURCES += \
     src/bucket.cpp \
     src/netengine.cpp \
     src/msgpack.cpp \
-    src/utils.cpp
+    src/utils.cpp \
+    src/logsignal.cpp
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -31,7 +32,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 
 win32{
-    LIBS += -L$$PWD/lib/win -lprotobuf-lite -ludt -lebcCryptoLib
+    LIBS += -L$$PWD/lib/win -lprotobuf-lite -ludt -lebcCryptoLib -lQsLog2
     LIBS += -lws2_32 -lwsock32
 }
 
@@ -43,8 +44,8 @@ ios{
 }
 
 unix{
-    ANDROID_EXTRA_LIBS = $$PWD/lib/android/libprotobuf-lite.so $$PWD/lib/android/libudt.so  $$PWD/lib/android/libebcCryptoLib.so
-    LIBS += -L$$PWD/lib/android -lprotobuf-lite -ludt -lebcCryptoLib
+    ANDROID_EXTRA_LIBS = $$PWD/lib/android/libprotobuf-lite.so $$PWD/lib/android/libudt.so  $$PWD/lib/android/libebcCryptoLib.so $$PWD/lib/android/libQsLog.so
+    LIBS += -L$$PWD/lib/android -lprotobuf-lite -ludt -lebcCryptoLib -lQsLog
 }
 
 INCLUDEPATH += $$PWD/include
@@ -59,7 +60,9 @@ HEADERS += \
     include/netengine.h \
     include/utils.h \
     include/msgpack.h \
-    include/ebcCryptoLib.h
+    include/ebcCryptoLib.h \
+    include/QsLog.h \
+    include/logsignal.h
 
 RESOURCES += \
     qml.qrc

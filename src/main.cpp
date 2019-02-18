@@ -15,7 +15,23 @@
 #include <QCoreApplication>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include <QDir>
+#include "QsLog.h"
+#include "logsignal.h"
 #endif
+
+#ifdef ON_QT
+//create an object "lg",whose function send signal to qml to show the message on the screen
+logSignal lg;
+//send signal to qml
+void logFunction(const QString &message, QsLogging::Level level)
+{
+    emit lg.newLog(message, level);
+}
+
+#endif
+
 
 int main(int argc, char *argv[])
 {
@@ -23,9 +39,32 @@ int main(int argc, char *argv[])
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QGuiApplication app(argc, argv);
     QQmlApplicationEngine engine;
+    //register "lg" in qml named "log"
+    engine.rootContext()->setContextProperty("log", &lg);
     engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
     if (engine.rootObjects().isEmpty())
         return -1;
+
+
+    using namespace QsLogging;
+
+    // 1. init the logging mechanism
+    Logger& logger = Logger::instance();
+    logger.setLoggingLevel(QsLogging::TraceLevel);
+    const QString sLogPath(QDir(app.applicationDirPath()).filePath("log.txt"));
+
+    // 2. add two destinations
+    DestinationPtr fileDestination(DestinationFactory::MakeFileDestination(
+      sLogPath, EnableLogRotation, MaxSizeBytes(512), MaxOldLogCount(2)));
+    DestinationPtr debugDestination(DestinationFactory::MakeDebugOutputDestination());
+    DestinationPtr functorDestination(DestinationFactory::MakeFunctorDestination(&logFunction));
+    logger.addDestination(debugDestination);
+    logger.addDestination(fileDestination);
+    logger.addDestination(functorDestination);
+
+    QLOG_INFO() << "Program started ";
+
+
 #endif
 
     NET::NodeId id;
@@ -34,14 +73,15 @@ int main(int argc, char *argv[])
     NET::Node::printNodeId(id);
     NET::NetEngine net(id);
 
+
 #ifndef ON_QT
     net.startServer();
     std::thread cmd= std::thread([&net]()
     {
         //接收用户输入命令线程
-        std::cout<<"Usege: "<<std::endl;
-        std::cout<<"0: Print all node info"<<std::endl;
-        std::cout<<"q: quit the app"<<std::endl;
+        QLOG_INFO()<<"Usege: ";
+        QLOG_INFO()<<"0: Print all node info";
+        QLOG_INFO()<<"q: quit the app";
 
         char c=0;
         while((c=getchar()) != 'q')
@@ -57,7 +97,7 @@ int main(int argc, char *argv[])
             case '\n':
                 break;
             default:
-                std::cout<<"Unkown cmd!"<<std::endl;
+                QLOG_INFO()<<"Unkown cmd!";
                 break;
             }
         }
@@ -69,6 +109,7 @@ int main(int argc, char *argv[])
     cmd.join();
     return 0;
 #else
+
     net.startClient();
     return app.exec();
 #endif

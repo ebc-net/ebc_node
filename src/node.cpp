@@ -1,6 +1,7 @@
 #include "node.h"
 #include <iostream>
 #include <cstring>
+#include<QsLog.h>
 
 
 namespace NET
@@ -10,7 +11,7 @@ Node::Node(const NodeId & _id, const SockAddr _addr, const NatType _nat, const N
 {
     if(_id.size() > ID_LENGTH)
     {
-        std::cout<<"id length "<<_id.size()<<"error"<<std::endl;
+        QLOG_ERROR()<<"id length "<<_id.size()<<"error";
         return ;
     }
 
@@ -112,9 +113,15 @@ Node &Node::operator=(const Node &o)
 
 void Node::printNodeId(const NodeId &_id)
 {
+   char tmp_id[2];
+   std::string l_id;
    for(auto &i: _id)
-       printf("%02x", i);
-   printf("\n");
+   {
+     sprintf(tmp_id,"%02x", i);
+     l_id += tmp_id;
+   }
+   QLOG_INFO()<<l_id.c_str();
+   qDebug()<<l_id.c_str();
 }
 
 void Node::printNodeId(const std::string &_id)
@@ -128,13 +135,13 @@ void Node::printNodeState(const Node::NodeState _state)
 {
     switch (_state) {
     case CONNECTED:
-        std::cout<<"connected"<<std::endl;
+        QLOG_INFO()<<"connected";
         break;
     case PAUNCH:
-        std::cout<<"PAUNCH"<<std::endl;
+        QLOG_INFO()<<"PAUNCH";
         break;
     case DISCONNECTED:
-        std::cout<<"DISCONNECTED"<<std::endl;
+        QLOG_INFO()<<"DISCONNECTED";
         break;
     default:
         break;
@@ -145,16 +152,16 @@ void Node::printNatType(const Node::NatType _nat)
 {
     switch (_nat) {
     case FULL_CLONE:
-        std::cout<<"FULL CLONE"<<std::endl;
+        QLOG_INFO()<<"FULL CLONE";
         break;
     case RESTRICT:
-        std::cout<<"RESTRICT"<<std::endl;
+        QLOG_INFO()<<"RESTRICT";
         break;
     case PORT_RESTRICT:
-        std::cout<<"PORT_RESTRICT"<<std::endl;
+        QLOG_INFO()<<"PORT_RESTRICT";
         break;
     case SYMMTRIC:
-        std::cout<<"SYMMTRIC"<<std::endl;
+        QLOG_INFO()<<"SYMMTRIC";
         break;
     default:
         break;

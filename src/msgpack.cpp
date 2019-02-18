@@ -1,6 +1,7 @@
 #include "msgpack.h"
 #include <assert.h>
 #include "node.h"
+#include<QsLog.h>
 
 
 namespace NET {
@@ -69,19 +70,19 @@ int msgPack::unpack(const void *buf, int len)
 
     if(ebcMsg.ParseFromArray(buf, len) == false)
     {
-        std::cout<<"Parse msg error"<<std::endl;
+        QLOG_ERROR()<<"Parse msg error";
         return -1;
     }
 
     if((ebcMsg.head() != msgHead))
     {
-        std::cout<<"msg head error"<<std::endl;
+        QLOG_ERROR()<<"msg head error";
         return -1;
     }
 
     if(ebcMsg.type() == config::MsgType::EMPTY)
     {
-        std::cout<<"get msg type empty"<<std::endl;
+        QLOG_INFO()<<"get msg type empty";
         return -1;
     }
 
@@ -89,7 +90,7 @@ int msgPack::unpack(const void *buf, int len)
     {
         if(ebcMsg.length() != ebcMsg.nodes().ByteSizeLong())
         {
-            std::cout<<"get msg length error"<<std::endl;
+            QLOG_ERROR()<<"get msg length error";
             return -1;
         }
     }
@@ -97,7 +98,7 @@ int msgPack::unpack(const void *buf, int len)
     {
         if(ebcMsg.length() != ebcMsg.msg().length())
         {
-            std::cout<<"get msg length error"<<std::endl;
+            QLOG_ERROR()<<"get msg length error";
             return -1;
         }
     }
@@ -108,27 +109,27 @@ int msgPack::unpack(const void *buf, int len)
 
 void msgPack::msgPrint()
 {
-   std::cout<<"version:"<<ebcMsg.version()<<std::endl;
-   std::cout<<"src_id:";
+   QLOG_INFO()<<"version:"<<ebcMsg.version().c_str();
+   QLOG_INFO()<<"src_id:";
    Node::printNodeId(ebcMsg.src_id());
-   std::cout<<"dst_id:";  //注意，无法打印
+   QLOG_INFO()<<"dst_id:";  //注意，无法打印
    Node::printNodeId(ebcMsg.dst_id());
 
    switch (ebcMsg.type()) {
    case config::MsgType::GET_DATA:
-           std::cout<<"type :"<<"GET_DATA"<<std::endl;
+           QLOG_INFO()<<"type :"<<"GET_DATA";
        break;
    case config::MsgType::GET_NODE:
-           std::cout<<"type :"<<"GET_NODE"<<std::endl;
+           QLOG_INFO()<<"type :"<<"GET_NODE";
        break;
    case config::MsgType::REP:
-           std::cout<<"type :"<<"REP"<<std::endl;
+           QLOG_INFO()<<"type :"<<"REP";
        break;
    case config::MsgType::PUNCH:
-           std::cout<<"type :"<<"PUNCH"<<std::endl;
+           QLOG_INFO()<<"type :"<<"PUNCH";
        break;
    case config::MsgType::EMPTY:
-           std::cout<<"type :"<<"EMPTY"<<std::endl;
+           QLOG_INFO()<<"type :"<<"EMPTY";
        break;
    default:
        break;
@@ -136,20 +137,20 @@ void msgPack::msgPrint()
 
    switch (ebcMsg.sub_type()) {
    case config::MsgSubType::DATA :
-       std::cout<<"sub_type :"<<"DATA"<<std::endl;
+       QLOG_INFO()<<"sub_type :"<<"DATA";
        break;
    case config::MsgSubType::NODE :
-       std::cout<<"sub_type :"<<"NODE"<<std::endl;
+       QLOG_INFO()<<"sub_type :"<<"NODE";
        break;
    case config::MsgSubType::EMPTY_SUB :
-       std::cout<<"sub_type :"<<"EMPTY"<<std::endl;
+       QLOG_INFO()<<"sub_type :"<<"EMPTY";
        break;
    default:
        break;
 
    }
 
-   std::cout<<"length: "<<ebcMsg.length()<<std::endl;
+   QLOG_INFO()<<"length: "<<ebcMsg.length();
 
    if(ebcMsg.has_nodes())
    {
@@ -157,15 +158,15 @@ void msgPack::msgPrint()
        int node_count = nodes.ebcnodes_size();
        for(int i=0; i<node_count; ++i)
        {
-           std::cout<<"node id ";
+           QLOG_INFO()<<"node id ";
            Node::printNodeId(nodes.ebcnodes(i).id());
-           std::cout<<"node ip "<<nodes.ebcnodes(i).ip()<<std::endl;//注意，无法打印
-           std::cout<<"node port "<<nodes.ebcnodes(i).port_nat()<<std::endl;
+           QLOG_INFO()<<"node ip "<<nodes.ebcnodes(i).ip();//注意，无法打印
+           QLOG_INFO()<<"node port "<<nodes.ebcnodes(i).port_nat();
        }
    }
    else if(!ebcMsg.msg().empty())
    {
-       std::cout<<"msg body: "<<ebcMsg.msg()<<std::endl;
+       QLOG_INFO()<<"msg body: "<<ebcMsg.msg().c_str();
    }
 }
 
