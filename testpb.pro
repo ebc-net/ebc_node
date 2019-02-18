@@ -37,10 +37,10 @@ win32{
 }
 
 macx{
-    LIBS += -L$$PWD/lib/mac -lprotobuf-lite -ludt -lebcCryptoLib
+    LIBS += -L$$PWD/lib/mac -lprotobuf-lite -ludt -lebcCryptoLib -lQsLog
 }
 ios{
-    LIBS += -L$$PWD/lib/ios -lprotobuf-lite -ludt -lebcCryptoLib
+    LIBS += -L$$PWD/lib/ios -lprotobuf-lite -ludt -lebcCryptoLib -lQsLog
 }
 
 unix{
