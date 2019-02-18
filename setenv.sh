@@ -12,9 +12,9 @@ then
 	sudo ln $CDIR/$LIBDIR/libudt4.so .
 fi
 
-if [ ! -e  libprotobuf-lite.so.17 ]
+if [ ! -e  libprotobuf-lite.so.15 ]
 then
-sudo ln $CDIR/$LIBDIR/libprotobuf-lite.so libprotobuf-lite.so.17
+sudo ln $CDIR/$LIBDIR/libprotobuf-lite.so libprotobuf-lite.so.15
 fi
 
 
