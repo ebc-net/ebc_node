@@ -10,6 +10,7 @@
 #include "netengine.h"
 #include "ebcCryptoLib.h"
 
+#include "QsLog.h"
 
 #ifdef ON_QT
 #include <QCoreApplication>
@@ -17,7 +18,6 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QDir>
-#include "QsLog.h"
 #include "logsignal.h"
 #endif
 
@@ -62,9 +62,9 @@ int main(int argc, char *argv[])
     logger.addDestination(fileDestination);
     logger.addDestination(functorDestination);
 
+#else
+	Cout::instance();
     QLOG_INFO() << "Program started ";
-
-
 #endif
 
     NET::NodeId id;

@@ -26,6 +26,7 @@
 #ifndef QSLOG_H
 #define QSLOG_H
 
+#ifdef ON_QT
 #include "QsLogLevel.h"
 #include "QsLogDest.h"
 #include <QDebug>
@@ -99,17 +100,9 @@ private:
 
 //! Logging macros: define QS_LOG_LINE_NUMBERS to get the file and line number
 //! in the log output.
-#ifndef QS_LOG_LINE_NUMBERS
-
-#ifdef ON_QT
 #define QLOG_INFO()\
     if (QsLogging::Logger::instance().loggingLevel() > QsLogging::InfoLevel) {} \
     else QsLogging::Logger::Helper(QsLogging::InfoLevel).stream()
-#else
-#define QLOG_INFO()\
-
-
-#endif
 #define QLOG_WARN()  \
     if (QsLogging::Logger::instance().loggingLevel() > QsLogging::WarnLevel) {} \
     else QsLogging::Logger::Helper(QsLogging::WarnLevel).stream()
@@ -117,22 +110,106 @@ private:
     if (QsLogging::Logger::instance().loggingLevel() > QsLogging::ErrorLevel) {} \
     else QsLogging::Logger::Helper(QsLogging::ErrorLevel).stream()
 
-#else
-
-#define QLOG_INFO()  \
-    if (QsLogging::Logger::instance().loggingLevel() > QsLogging::InfoLevel) {} \
-    else QsLogging::Logger::Helper(QsLogging::InfoLevel).stream() << __FILE__ << '@' << __LINE__
-#define QLOG_WARN()  \
-    if (QsLogging::Logger::instance().loggingLevel() > QsLogging::WarnLevel) {} \
-    else QsLogging::Logger::Helper(QsLogging::WarnLevel).stream() << __FILE__ << '@' << __LINE__
-#define QLOG_ERROR() \
-    if (QsLogging::Logger::instance().loggingLevel() > QsLogging::ErrorLevel) {} \
-    else QsLogging::Logger::Helper(QsLogging::ErrorLevel).stream() << __FILE__ << '@' << __LINE__
-
-#endif
 
 #ifdef QS_LOG_DISABLE
 #include "QsLogDisableForThisFile.h"
 #endif
+
+#else
+//////////////////////////////////////ON LINUX
+#include <stdio.h>
+#include <string>
+#include <chrono>
+#include <iomanip>
+#include <sstream>
+#include <fstream>
+#include <iostream>
+#include <mutex>
+
+
+class Cout
+{
+public:
+    Cout();
+    ~Cout();
+
+    static Cout* instance();
+    void writeFile(std::string);
+    class logBuff
+    {
+        public:
+            #define RESET   "\033[0m"
+			#define RED     "\033[1m\033[31m"      /* Red */
+            #define GREEN   "\033[1m\033[32m"      /* Green */
+            #define YELLOW  "\033[1m\033[33m"      /* Yellow */
+
+            typedef enum _LEVEL
+            {
+                INFO = 0,
+                WARNING,
+                ERROR,
+            }LEVEL;
+
+            explicit logBuff(LEVEL l, class Cout* c):level(l),pout(c)
+            {
+                if(INFO == level )
+                  sbuf += "[INFO ] ";
+                else if(WARNING == level)
+                  sbuf += "[WARN ] ";
+                else if(ERROR == level)
+                  sbuf += "[ERROR] ";
+
+                std::stringstream ss;
+                auto t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+                ss<<std::put_time(std::localtime(&t), "%m-%d %T");
+                sbuf += ss.str()+" ";
+            }
+
+            logBuff& operator<<(bool value){sbuf += value?"true":"false"; return* this;}
+            logBuff& operator<<(float value){sbuf += std::to_string(value); return* this;}
+            logBuff& operator<<(double value){sbuf += std::to_string(value); return* this;}
+            logBuff& operator<<(int value){sbuf += std::to_string(value); return* this;}
+            logBuff& operator<<(unsigned int value){sbuf += std::to_string(value); return* this;}
+            logBuff& operator<<(short value){sbuf += std::to_string(value); return* this;}
+            logBuff& operator<<(unsigned short value){sbuf += std::to_string(value); return* this;}
+            logBuff& operator<<(long value){sbuf += std::to_string(value); return* this;}
+            logBuff& operator<<(unsigned long value){sbuf += std::to_string(value); return* this;}
+            logBuff& operator<<(const char* str){sbuf += str; return* this;}
+
+
+            ~logBuff()
+            {
+                sbuf += "\n";
+                if(INFO == level )
+                  printf(GREEN "%s" RESET, sbuf.c_str());
+                else if(WARNING == level)
+                  printf(YELLOW "%s" RESET, sbuf.c_str());
+                else if(ERROR == level)
+                  printf(RED "%s" RESET, sbuf.c_str());
+
+                pout->writeFile(sbuf);
+            }
+
+        private:
+            std::string sbuf;
+            LEVEL level;
+            class Cout *pout;
+    };
+
+private:
+    std::ofstream logFile;
+    std::mutex flock;
+};
+
+#define QLOG_INFO() \
+	    Cout::logBuff(Cout::logBuff::LEVEL::INFO, Cout::instance())
+
+#define QLOG_WARNING() \
+	    Cout::logBuff(Cout::logBuff::LEVEL::WARNING, Cout::instance())
+
+#define QLOG_ERROR() \
+	    Cout::logBuff(Cout::logBuff::LEVEL::ERROR, Cout::instance())
+
+#endif //ON_QT
 
 #endif // QSLOG_H

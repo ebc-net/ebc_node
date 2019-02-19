@@ -1,9 +1,9 @@
 #include "netengine.h"
 #include <iostream>
 #include <cstring>
+#include "QsLog.h"
 #ifdef ON_QT
 #include <QtGlobal>
-#include "QsLog.h"
 #endif
 
 namespace NET

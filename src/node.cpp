@@ -121,7 +121,6 @@ void Node::printNodeId(const NodeId &_id)
      l_id += tmp_id;
    }
    QLOG_INFO()<<l_id.c_str();
-   qDebug()<<l_id.c_str();
 }
 
 void Node::printNodeId(const std::string &_id)

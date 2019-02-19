@@ -1,3 +1,4 @@
+#ifdef ON_QT
 #ifndef LOGSIGNAL_H
 #define LOGSIGNAL_H
 
@@ -18,3 +19,5 @@ signals:
 };
 
 #endif // LOGSIGNAL_H
+
+#endif
