@@ -1,7 +1,6 @@
 #ifndef NODE_H
 #define NODE_H
 
-#include <chrono>
 #include <vector>
 
 #include "udt.h"
@@ -32,7 +31,6 @@ public:
         SYMMTRIC,   //对称型
     }NatType;
 
-    using time_point = std::chrono::steady_clock::time_point;
 
     /*******************************function*****************/
     Node():id({0}),state(DISCONNECTED), nat(SYMMTRIC), ping_count(0) {}
@@ -52,10 +50,6 @@ public:
     void setSock(const UDTSOCKET& _sock);
     const UDTSOCKET& getSock();
 
-    void setLastTm(const time_point &_tm);
-    const time_point& getLastTime();
-    bool isExpired(const time_point &now);
-
     void setPingCount(const uint8_t &count);
     const uint8_t &getPingCount();
 
@@ -71,6 +65,15 @@ public:
     static void NodeId2String(const NodeId&, std::string &);
     static void String2NodeId(const std::string&, NodeId&);
     static void printNode(Node &);
+    static int lowBit(const NodeId &);
+    static int idCmd(const NodeId& _id1, const NodeId& _id2);
+    static int xorCmp(const NodeId& _id, const NodeId& _id1, const NodeId& _id2);
+
+    inline int idCmp(const NodeId&);
+    inline unsigned int commBit(const NodeId&);
+    inline void setExpired();
+    inline bool isExpired() { return state == Node::DISCONNECTED;}
+
 private:
     NodeId id;
     SockAddr addr;

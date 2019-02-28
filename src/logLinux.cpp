@@ -13,7 +13,7 @@ static Cout *myout;
 
 Cout::Cout()
 {
-    logFile.open("log.txt", std::ios::app|std::ios::out);
+    logFile.open("log.txt", std::ios::ate|std::ios::out);
     if(logFile.is_open() == false)
     {
         std::cout<<"log file open fail"<<std::endl;

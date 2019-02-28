@@ -204,7 +204,7 @@ private:
 #define QLOG_INFO() \
 	    Cout::logBuff(Cout::logBuff::LEVEL::INFO, Cout::instance())
 
-#define QLOG_WARNING() \
+#define QLOG_WARN() \
 	    Cout::logBuff(Cout::logBuff::LEVEL::WARNING, Cout::instance())
 
 #define QLOG_ERROR() \
