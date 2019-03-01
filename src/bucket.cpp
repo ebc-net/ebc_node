@@ -94,6 +94,17 @@ bool Bucket::onNewNode(const Sp<Node>& node, int confirm)//客户端分桶
     }
     return true;
 }
+
+bool Bucket::findNode(const NodeId &id)
+{
+    auto it = findBucket(id);
+    for (auto & n : it->nodes)
+    {
+        if(Node::idCmd(id,n->getId()) == 0 )
+            return true;
+    }
+    return false;
+}
 //服务器还给客户的ID表
 std::list<Sp<Node> > Bucket::repNodes(const NodeId &id)//服务器REP节点的96个节点
 {
@@ -191,6 +202,19 @@ bool Bucket::split(const Kbucket::iterator &b)
     }
     return true;
 }
+
+void Bucket::closeBucket(Bucket::destoryNet d)
+{
+    for(auto& b: buckets)
+    {
+        for(auto& n: b.nodes)
+        {
+            d(n->getSock());
+        }
+    }
+}
+
+
 
 bool Bucket::isEmpty() const
 {

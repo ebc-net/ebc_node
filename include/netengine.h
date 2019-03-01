@@ -28,18 +28,12 @@ private:
     int getReadableByte(const UDTSOCKET &sock);
     void handleMsg(UDTSOCKET, int epllFd = 0);
     int startPunch(int&,uint32_t ip, uint16_t port);
-
-    void addPeertobkt(const NodeId &_id, const uint32_t& ip,const uint32_t& port_nat, const UDTSOCKET sock=0);
-    void addPeertobkt(const std::string&_id, const uint32_t& ip,const uint32_t& port_nat, const UDTSOCKET sock=0 );
-    void addCliNodetobkt(const NodeId &_id, const uint32_t& ip,const uint32_t& port_nat, const UDTSOCKET& sock);//加入服务器K桶
-    void addCliNodetobkt(const std::string &_id, const struct sockaddr_in& addr,const uint32_t& nat, const UDTSOCKET& sock);
-    void addCliNodetobkt(const std::string& _id,const uint32_t& ip,const uint32_t& port_nat,const UDTSOCKET& sock);
-
+    void addtobkt(const Sp<Node> &node);
+    void setNodeExpired(const UDTSOCKET& sock);
 
     Node self;   //本节点的信息
     UDTSOCKET boot_sock;  //本节点与服务器通信的SOCKET
-    std::map<NodeId , Node> peerNode; //与此节点连接的节点ID与节点信息对
-    std::map<NodeId , Node> clientNode; //此节点作为服务端时使用，记录与之相连的客户端节点信息
+
     Bucket kad;//服务器或是客户机的K桶
     std::thread boot_thread; //启动线程，负责与服务器节点交互以及维护对端节点的连接
     bool boot_thread_flag;
@@ -55,6 +49,8 @@ private:
 
 
 #if 0
+    std::map<NodeId , Node> peerNode; //与此节点连接的节点ID与节点信息对
+    std::map<NodeId , Node> clientNode; //此节点作为服务端时使用，记录与之相连的客户端节点信息
     void addClientNode(const NodeId &_id, const uint32_t& ip,const uint32_t& port_nat, const UDTSOCKET& sock);
     void addClientNode(const std::string &_id, const struct sockaddr_in& addr,const uint32_t& nat, const UDTSOCKET& sock);
     void addClientNode(const std::string& _id,const uint32_t& ip,const uint32_t& port_nat,const UDTSOCKET& sock);

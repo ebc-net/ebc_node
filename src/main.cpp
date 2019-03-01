@@ -75,8 +75,8 @@ int main(int argc, char *argv[])
     NET::Node::printNodeId(id);
     NET::NetEngine net(id);
 
-//    Bucket kad(id);
-    net.startClient();
+    Bucket kad(id);
+
 	
 //	id = {0x1};
 //    for(unsigned int i=0; i<1000; i++)
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
 //	kad.dump();
 
 
-#if 0
+#if 1
 #ifndef ON_QT
     net.startServer();
     std::thread cmd= std::thread([&net]()
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
     return 0;
 #else
 
-    //net.startClient();
+    net.startClient();
     return app.exec();
 #endif
 #endif

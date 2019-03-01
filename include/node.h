@@ -71,8 +71,8 @@ public:
 
     inline int idCmp(const NodeId&);
     inline unsigned int commBit(const NodeId&);
-    inline void setExpired();//失效
-    inline bool isExpired() { return state == Node::DISCONNECTED;}
+    inline void setExpired() {state = NodeState::DISCONNECTED;};//失效
+    inline bool isExpired()  { return state == Node::DISCONNECTED;}
 
 private:
     NodeId id;

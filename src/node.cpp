@@ -232,10 +232,6 @@ unsigned int Node::commBit( const NodeId& _id)
     return 8 * i + j;
 }
 
-void Node::setExpired()
-{
-    state = NodeState::DISCONNECTED;
-}
 
 }
 
