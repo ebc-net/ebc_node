@@ -4,6 +4,8 @@
 
 #include <memory>
 #include <array>
+#include <chrono>
+
 namespace  NET
 {
 #define NET_VERSION    ("V0.0.0")
@@ -12,6 +14,7 @@ namespace  NET
 #define NODE_PORT  (9443)
 #define SRV_PORT   (9444)
 #define ID_LENGTH  (20)
+#define MAX_NODE   (8)
 #define comPortNat(port,nat)  (((port)<<(16)) | ((nat)&(0xf)<<(12)))
 #define parPort(value)        (((value)&(0xffff0000))>>16)
 #define parNat(value)         (((value)&(0xf000)) >> 12)
@@ -19,6 +22,7 @@ namespace  NET
 
 template<class T>
 using Sp = std::shared_ptr<T>;
+using time_point = std::chrono::steady_clock::time_point;
 using NodeId = std::array<uint8_t, ID_LENGTH>;
 
 }

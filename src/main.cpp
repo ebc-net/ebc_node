@@ -9,6 +9,7 @@
 #include <string.h>
 #include "netengine.h"
 #include "ebcCryptoLib.h"
+#include "bucket.h"
 
 #include "QsLog.h"
 
@@ -32,6 +33,7 @@ void logFunction(const QString &message, QsLogging::Level level)
 
 #endif
 
+using namespace NET;
 
 int main(int argc, char *argv[])
 {
@@ -69,11 +71,28 @@ int main(int argc, char *argv[])
 
     NET::NodeId id;
     ebcCryptoLib cl;
-    cl.randomNbytes(id.data(), 20);
+    cl.randomNbytes(id.data(), ID_LENGTH);
     NET::Node::printNodeId(id);
     NET::NetEngine net(id);
 
+//    Bucket kad(id);
+    net.startClient();
+	
+//	id = {0x1};
+//    for(unsigned int i=0; i<1000; i++)
+//	{
+//		//id[i/8] |= 0x1<<(i%8);
+//		cl.randomNbytes(id.data(), ID_LENGTH);
+//		Node::printNodeId(id);
+//		QLOG_INFO()<<"";
+//		Sp<Node> node = std::make_shared<Node>(id);
+//		kad.onNewNode(node, 2);
+//	}
 
+//	kad.dump();
+
+
+#if 0
 #ifndef ON_QT
     net.startServer();
     std::thread cmd= std::thread([&net]()
@@ -104,14 +123,13 @@ int main(int argc, char *argv[])
     }
     );
 
-    net.sendHello();
-
     cmd.join();
     return 0;
 #else
 
-    net.startClient();
+    //net.startClient();
     return app.exec();
+#endif
 #endif
 }
 
