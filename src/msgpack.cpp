@@ -13,21 +13,21 @@ msgPack::msgPack(const NET::NodeId &_id):self_id(_id)
 
 int msgPack::pack(config::MsgType type, void *msg, void *buf, int size,config::MsgSubType subType,const NET::NodeId dstId)
 {
-    ebcMsg.set_head(msgHead);
-    ebcMsg.set_version(NET_VERSION);
+    ebcMsg.set_head(msgHead);//0xF5FA
+    ebcMsg.set_version(NET_VERSION);//V0.0.0
     ebcMsg.set_src_id(&self_id, ID_LENGTH);
-    ebcMsg.set_type(type);
+    ebcMsg.set_type(type);//EMPTY = 0,GET_NODE = 1,GET_DATA = 2,PING = 3,HEART = 4,REP = 5,PUNCH = 6,
 
     switch (type) {
     case config::MsgType::GET_NODE :
     {
         config::EbcNode* node = (config::EbcNode *)msg;  //发送get_node要将自己的NAT信息发过去
-        config::EbcNodes* nodes = ebcMsg.mutable_nodes();
-        nodes->add_ebcnodes()->CopyFrom(*node);
+        config::EbcNodes* nodes = ebcMsg.mutable_nodes();//服务器发回节点的消息
+        nodes->add_ebcnodes()->CopyFrom(*node);//??
         ebcMsg.set_length(nodes->ByteSizeLong());
         break;
     }
-    case config::MsgType::REP:
+    case config::MsgType::REP:                       //服务器应答
     {
         ebcMsg.set_dst_id(&dstId, dstId.size());
         ebcMsg.set_sub_type(subType);
@@ -66,9 +66,9 @@ int msgPack::pack(config::MsgType type, void *msg, void *buf, int size,config::M
 
 int msgPack::unpack(const void *buf, int len)
 {
-    assert(buf);
+    assert(buf);//计算表达式buf,用 abort 来终止程序运行
 
-    if(ebcMsg.ParseFromArray(buf, len) == false)
+    if(ebcMsg.ParseFromArray(buf, len) == false)//
     {
         QLOG_ERROR()<<"Parse msg error";
         return -1;

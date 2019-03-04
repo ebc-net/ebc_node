@@ -77,24 +77,22 @@ Bucket::Kbucket::iterator Bucket::findBucket(const NodeId &id)
     {
         if(std::next(it) == buckets.end())
             return  it;
-
         if(Node::idCmd(id, std::next(it)->first) < 0)
             return it;
-
-        it = std::next(it);
+		it = std::next(it);
     }
 }
 
 unsigned Bucket::depth(const Kbucket::const_iterator& it) const
 {
-    if (it == buckets.end())
-        return 0;
-    int bit1 = Node::lowBit(it->first);
-    int bit2 = std::next(it) != buckets.end() ? Node::lowBit(std::next(it)->first) : -1;
-    return std::max(bit1, bit2)+1;
+	if (it == buckets.end())
+	  return 0;
+	int bit1 = Node::lowBit(it->first);
+	int bit2 = std::next(it) != buckets.end() ? Node::lowBit(std::next(it)->first) : -1;
+	return std::max(bit1, bit2)+1;
 }
 
-bool Bucket::contains(const Kbucket::const_iterator &it, const NodeId &id) const
+bool Bucket::contains(const Kbucket::const_iterator &it, const NodeId &id) const//判断是否在bucket中
 {
     return Node::idCmd(it->first, id) <= 0
             && (std::next(it) == buckets.end()  || Node::idCmd(id, std::next(it)->first) < 0);
@@ -115,13 +113,15 @@ bool Bucket::onNewNode(const Sp<Node>& node, int confirm)
     }
 
     bool mybucket = contains(b, selfId);
-    if (mybucket) {
-        //grow_time = now;
-    }
+//    if (mybucket) {
+//        //grow_time = now;
+//    }
 
-    if (b->nodes.size() >= MAX_NODE) {
-
-        if (mybucket) {
+    if (b->nodes.size() >= MAX_NODE) {//大于8个开始分桶
+		//QLOG_WARN()<<mybucket;
+//        if (mybucket ) {
+        if (mybucket || depth(b) < 6) {
+			//QLOG_WARN()<<"split !!";
             split(b);
             return onNewNode(node, confirm);
         }
@@ -137,20 +137,102 @@ bool Bucket::onNewNode(const Sp<Node>& node, int confirm)
     return true;
 }
 
+bool Bucket::findNode(const NodeId &id)
+{
+    auto it = findBucket(id);
+    for (auto & n : it->nodes)
+    {
+        if(Node::idCmd(id,n->getId()) == 0 )
+            return true;
+    }
+    return false;
+}
+//服务器还给客户的ID表
+std::list<Sp<Node> > Bucket::repNodes(const NodeId &id)//服务器REP节点的96个节点
+{
+    std::list<Sp<Node>> nodes;
+    auto it = findBucket(id);
+    int bit = depth(it) - 1;
+    auto tmp = it->nodes;
+    nodes.splice(nodes.end(),tmp);
+    NodeId id_first = it->first;
+
+//    QLOG_WARN()<<"bit is : "<<bit;
+//    QLOG_WARN()<<"first node id is : ";
+//    Node::printNodeId(id_first);
+//    QLOG_WARN()<<"REP NODES number is : "<<nodes.size();
+
+
+    for( ;bit >= 0; bit--)
+    {
+        int i = bit/8;
+        int j = bit%8;
+        id_first[i] ^= (0x80 >> j);//closest
+        auto it = findBucket(id_first);
+        auto tmp = it->nodes;
+        nodes.splice(nodes.end(),tmp);
+
+//        QLOG_WARN()<<"first node id is : ";
+//        Node::printNodeId(id_first);
+
+
+        id_first[i] &= (0xfe <<(7 - j));
+
+//        QLOG_WARN()<<"REP NODES number is : "<<nodes.size();
+    }
+
+    return nodes;
+}
+
+bool Bucket::onNewNodesrv(const Sp<Node>& node, int confirm)//服务器端分桶
+{
+   auto b = findBucket(node->getId());//查找节点属于哪个桶
+    if (b == buckets.end())
+        return false;
+
+    if (confirm == 2)
+        b->time = std::chrono::steady_clock::now();
+
+    for (auto& n : b->nodes) {//查找桶内有无此节点
+        if (n == node)
+            return false;
+    }
+    bool mybucket = contains(b, selfId);//本地节点是否属于b桶
+    if (mybucket) {
+        //grow_time = now;
+    }
+
+    if (b->nodes.size() >= MAX_NODE) {//如果大于8个节点就分桶
+        if (mybucket || depth(b) < 11) {  //深度11层
+            split(b);
+            return onNewNodesrv(node, confirm);
+        }
+        /* No space for this node.  Cache it away for later. */
+        if (confirm or not b->cached)
+            b->cached = node;
+    } else {
+        /* Create a new node. */
+        b->nodes.emplace_front(node);
+
+    }
+    return true;
+}
 bool Bucket::split(const Kbucket::iterator &b)
 {
-    NodeId new_id;
+    NodeId new_first_id;
     try {
-        new_id = middle(b);
+        new_first_id = middle(b);
     } catch (const std::out_of_range& e) {
         return false;
     }
 
+	QLOG_WARN()<<"new bucket : ";
+    Node::printNodeId(new_first_id);
     // Insert new bucket
-    buckets.insert(std::next(b), bucket {b->af, new_id, b->time});
+    buckets.insert(std::next(b), bucket {b->af, new_first_id, b->time});//从next(b)之前开始插入，
 
-    // Re-assign nodes
-    std::list<Sp<Node>> nodes {};
+    // Re-assign nodes重新分派节点
+    std::list<Sp<Node>> nodes {};//std::shared_ptr<T>;
     nodes.splice(nodes.begin(), b->nodes);
     while (!nodes.empty()) {
         auto n = nodes.begin();
@@ -163,6 +245,19 @@ bool Bucket::split(const Kbucket::iterator &b)
     return true;
 }
 
+void Bucket::closeBucket(Bucket::destoryNet d)
+{
+    for(auto& b: buckets)
+    {
+        for(auto& n: b.nodes)
+        {
+            d(n->getSock());
+        }
+    }
+}
+
+
+
 bool Bucket::isEmpty() const
 {
     return buckets.empty();
@@ -170,15 +265,16 @@ bool Bucket::isEmpty() const
 
 void Bucket::dump() const
 {
-    for(auto& b: buckets)
-    {
-        QLOG_WARN()<<"bucket size= "<<b.nodes.size();
-        Node::printNodeId(b.first);
-        for(auto& n: b.nodes)
-        {
-            Node::printNodeId(n->getId());
-        }
-    }
-    QLOG_WARN()<<"k-bucket num = "<<buckets.size();
+	for(auto& b: buckets)
+	{
+		QLOG_WARN()<<"bucket size= "<<b.nodes.size();
+		Node::printNodeId(b.first);
+		for(auto& n: b.nodes)
+		{
+			Node::printNodeId(n->getId());
+		}
+	}
+	QLOG_WARN()<<"k-bucket num = "<<buckets.size();
 }
+
 }

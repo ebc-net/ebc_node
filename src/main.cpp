@@ -129,12 +129,30 @@ int main(int argc, char *argv[])
 	QLOG_INFO() << "Program started ";
 #endif
 
-	NET::NodeId id;
-	ebcCryptoLib cl;
-	cl.randomNbytes(id.data(), ID_LENGTH);
-	NET::Node::printNodeId(id);
-	NET::NetEngine net(id);
+    NET::NodeId id;
+    ebcCryptoLib cl;
+    cl.randomNbytes(id.data(), ID_LENGTH);
+    NET::Node::printNodeId(id);
+    NET::NetEngine net(id);
 
+    Bucket kad(id);
+
+	
+//	id = {0x1};
+//    for(unsigned int i=0; i<1000; i++)
+//	{
+//		//id[i/8] |= 0x1<<(i%8);
+//		cl.randomNbytes(id.data(), ID_LENGTH);
+//		Node::printNodeId(id);
+//		QLOG_INFO()<<"";
+//		Sp<Node> node = std::make_shared<Node>(id);
+//		kad.onNewNode(node, 2);
+//	}
+
+//	kad.dump();
+
+
+#if 1
 #ifndef ON_QT
 	if(argc >= 2 && !strcmp(argv[1], "-d"))	
 	{
@@ -188,6 +206,7 @@ int main(int argc, char *argv[])
 #else
     net.startClient();
     return app.exec();
+#endif
 #endif
 }
 
