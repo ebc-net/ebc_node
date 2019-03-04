@@ -146,7 +146,6 @@ void NetEngine::startServer()
 
 void NetEngine::startClient(const std::string ip, const uint16_t port)
 {
-   //boot_sock = UDT::socket(AF_INET, SOCK_STREAM, 0);
    boot_sock = UDT::socket(AF_INET, SOCK_DGRAM, 0);
    if(boot_sock < 0)
    {
@@ -160,7 +159,6 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)
    srv_addr.sin_family = AF_INET;
 
     setUdtOpt(boot_sock);
-
     if(UDT::bind(boot_sock, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0)
     {
        QLOG_ERROR()<<"UDT bind error"<<UDT::getlasterror().getErrorMessage();
@@ -201,7 +199,6 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)
 
         while(boot_thread_flag)
         {
-            //ret = UDT::epoll_wait(epollFd, &readfds, &writefds, 1*1000);
             ret = UDT::epoll_wait(epollFd, &readfds, &writefds, &errfds, 5*1000);
             //QLOG_INFO()<<"ret = "<<ret;
             if(ret < -1)
@@ -232,7 +229,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)
                 }
                 else
                 {
-                    QLOG_ERROR()<<"peer connect error";
+                    QLOG_ERROR()<<"peer connect error1";
                     UDT::close(sock);
                     delPeerNode(sock);
                 }
@@ -240,6 +237,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)
             /*可写，这里表示connect连接状态, 在套接字可写后，获取套接字的状态，根据不同的状态可以知道socket的连接状态*/
             for(auto& sock:writefds)   //C++11 新特性
             {
+                //后面仔细考虑一下，这个地方应该不需要判断STATE了
                 UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);
                 //QLOG_INFO()<<"in writefds state = "<<state;
                 //connect 连接失败了
@@ -282,11 +280,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)
                     if(msg_len < 0)
                         continue;
 
-                    QLOG_INFO()<<"msg len = "<<msg_len;
-                    //memset(buf, 0, sizeof(buf));
-                    //sprintf(buf, "hello");
-                    //QLOG_INFO()<<"  send len"<<UDT::send(sock, buf, msg_len, 0);
-                    QLOG_INFO()<<"  send len"<<UDT::sendmsg(sock, buf, msg_len);
+                    UDT::sendmsg(sock, buf, msg_len);
                 }
                 else
                 {
@@ -307,7 +301,6 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)
             for(auto& sock:readfds)
             {
                 UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);
-                //QLOG_INFO()<<"in readfds state = "<<state;
                 /*这个时候的失败一般是之前连接上了，但是中间连接断开了*/
                 if(CLOSED == state || BROKEN == state || CONNECTING == state)
                 {
@@ -458,9 +451,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)
 {
     char buf[6*1024]="";
     msgPack recv_msg(self.getId());
-    //int ret = UDT::recv(sock, buf, sizeof(buf), 0);
     int ret = UDT::recvmsg(sock, buf, sizeof(buf));
-    QLOG_INFO()<<"recv ret = "<<ret;
     if(ret<0)
     {
         QLOG_ERROR()<<"recv client msg error: "<<UDT::getlasterror_desc()<<"ERROR code"<<UDT::getlasterror_code();
@@ -495,8 +486,8 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)
             ret = send_msg.pack(config::MsgType::PUNCH, &punch_node, buf, sizeof(buf));
             if(ret < 0)
                 break;
-            for(auto &node:clientNode)
 
+            for(auto &node:clientNode)
             {
                 auto tmp = nodes.add_ebcnodes();
                 tmp->set_id(&node.second.getId(), ID_LENGTH);
@@ -517,7 +508,6 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)
         if(ret < 0)
             return ;
         UDT::sendmsg(sock, buf, ret);
-        //UDT::send(sock, buf, ret, 0);
 
         break;
     }
