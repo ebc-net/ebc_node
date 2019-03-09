@@ -51,6 +51,7 @@ message EbcMsg
 	{	
 		bytes    msg = 10;        //消息正文，可选字段
 		EbcNodes nodes= 11;    //节点信息，如果消息子类型是NODE的话
+		bytes    target_id = 12; //需要查找的目标或资源ID
 	}
 }
  

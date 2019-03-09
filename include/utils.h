@@ -22,9 +22,10 @@ namespace  NET
 
 template<class T>
 using Sp = std::shared_ptr<T>;
-using time_point = std::chrono::steady_clock::time_point;
+using clock = std::chrono::steady_clock;
+using time_point = clock::time_point;
+using seconds = std::chrono::seconds;
 using NodeId = std::array<uint8_t, ID_LENGTH>;
-
 }
 
 #endif // UTILS_H

@@ -83,6 +83,25 @@ Bucket::Kbucket::iterator Bucket::findBucket(const NodeId &id)
     }
 }
 
+NodeId Bucket::randomId(const Kbucket::const_iterator &b)
+{
+    int bit1 = Node::lowBit(b->first);
+    int bit2 = std::next(b)==buckets.end() ? -1:Node::lowBit(std::next(b)->first);
+
+    int bit = std::max(bit1, bit2) + 1;
+    if(bit > 8*ID_LENGTH)
+        return b->first;
+    int bt = bit / 8;
+    NodeId id_return;
+    std::copy_n(b->first.cbegin(),bt, id_return.begin());
+    id_return[bt] = b->first[bt] & (0xFF00 >> (bit % 8));
+    id_return[bt] |= 0xff&rand()%8 >> (bit % 8);
+    for (unsigned i = bt + 1; i < ID_LENGTH; i++)
+        id_return[i] = 0xff&rand()%8;
+    return id_return;
+}
+
+
 unsigned Bucket::depth(const Kbucket::const_iterator& it) const
 {
 	if (it == buckets.end())
@@ -98,30 +117,31 @@ bool Bucket::contains(const Kbucket::const_iterator &it, const NodeId &id) const
             && (std::next(it) == buckets.end()  || Node::idCmd(id, std::next(it)->first) < 0);
 }
 
-bool Bucket::onNewNode(const Sp<Node>& node, int confirm)
+bool Bucket::onNewNode(const Sp<Node>& node, int confirm, bool isServer)
 {
     auto b = findBucket(node->getId());
     if (b == buckets.end())
         return false;
 
     if (confirm == 2)
-        b->time = std::chrono::steady_clock::now();
+        b->time = clock::now();
 
     for (auto& n : b->nodes) {
         if (n == node)
             return false;
     }
 
-    bool mybucket = contains(b, selfId);
-//    if (mybucket) {
-//        //grow_time = now;
-//    }
-
-    if (b->nodes.size() >= MAX_NODE) {//大于8个开始分桶
-		//QLOG_WARN()<<mybucket;
-//        if (mybucket ) {
-        if (mybucket || depth(b) < 6) {
-			//QLOG_WARN()<<"split !!";
+    bool mybucket = isServer?false:contains(b, selfId);
+    if(mybucket)
+    {
+        grow_time = clock::now();
+    }
+    if (b->nodes.size() >= MAX_NODE)
+    {//大于8个开始分桶
+        //QLOG_WARN()<<mybucket;
+        int dNum = isServer?11:6;
+        if (mybucket || depth(b) < dNum) {
+            //QLOG_WARN()<<"split !!";
             split(b);
             return onNewNode(node, confirm);
         }
@@ -147,6 +167,107 @@ bool Bucket::findNode(const NodeId &id)
     }
     return false;
 }
+
+#if 0
+Bucket::Kbucket::iterator Bucket::neighbourhoodMaintenance()
+{
+    auto b = findBucket(selfId);
+    return b;
+    
+}
+#endif
+
+bool Bucket::bucketMaintenance(std::function<void(Sp<Node> &dstNode, NodeId targetId)> sendFindNode, bool neighbour)
+{
+    int goodNode = 0;
+    Kbucket::iterator q;
+    if(!neighbour)
+        q = buckets.begin();
+    else
+        q=findBucket(selfId);
+    Sp<Node> dstNode{};
+    while ( q != buckets.end())
+    {
+        if(q->nodes.empty())
+        {
+            q = std::next(q);
+            continue;
+        }
+
+        for(auto &n : q->nodes)
+        {
+            if(!n->isExpired())
+            {
+                goodNode++;
+                dstNode = n;
+            }
+        }
+
+        if(!neighbour && goodNode < 3 && goodNode >0 )
+        {
+            sendFindNode(dstNode, randomId(q));
+            return true;
+        }
+        if(neighbour && goodNode >0)
+        {
+
+                    sendFindNode(dstNode, selfId);
+                       return true;
+        }
+
+        //在最邻近的桶找一个活节点，给他发送findClosestNode（一个需要维护桶范围内的随机ID），以下代码实现的就是这个功能
+        //写的不是很容易看懂，可以跳过不看
+        else if (goodNode == 0 )
+        {
+            auto doNetFunc = [&](struct bucket& b)
+            {
+                auto it = std::find_if(b.nodes.begin(), b.nodes.end(), [&](Sp<Node>& node)
+                {
+                        if(!node->isExpired())
+                {
+                        if(!neighbour)
+                        sendFindNode(node, randomId(q));
+                        else
+                        sendFindNode(node, selfId);
+                        return true;
+            }
+                        return false;
+            }
+                        );
+
+                if(it != b.nodes.end())
+                    return true;
+
+                return false;
+            };
+
+            auto itn = q;
+            auto itp = (q == buckets.begin()) ? buckets.end() : std::prev(q);
+            while ((itn != buckets.end() || itp != buckets.end()))
+            {
+                if (itn != buckets.end())
+                {
+                    if(doNetFunc(*itn))
+                        return true;
+                    itn = std::next(itn);
+                }
+                if (itp != buckets.end())
+                {
+                    if(doNetFunc(*itp))
+                        return true;
+                    itp = (itp == buckets.begin()) ? buckets.end() : std::prev(itp);
+                }
+            }
+
+            return false;
+        }
+        if(!neighbour)
+            q = std::next(q);
+    }
+
+    return false;
+}
+
 //服务器还给客户的ID表
 std::list<Sp<Node> > Bucket::repNodes(const NodeId &id)//服务器REP节点的96个节点
 {
@@ -157,10 +278,10 @@ std::list<Sp<Node> > Bucket::repNodes(const NodeId &id)//服务器REP节点的96
     nodes.splice(nodes.end(),tmp);
     NodeId id_first = it->first;
 
-//    QLOG_WARN()<<"bit is : "<<bit;
-//    QLOG_WARN()<<"first node id is : ";
-//    Node::printNodeId(id_first);
-//    QLOG_WARN()<<"REP NODES number is : "<<nodes.size();
+    //    QLOG_WARN()<<"bit is : "<<bit;
+    //    QLOG_WARN()<<"first node id is : ";
+    //    Node::printNodeId(id_first);
+    //    QLOG_WARN()<<"REP NODES number is : "<<nodes.size();
 
 
     for( ;bit >= 0; bit--)
@@ -184,39 +305,7 @@ std::list<Sp<Node> > Bucket::repNodes(const NodeId &id)//服务器REP节点的96
     return nodes;
 }
 
-bool Bucket::onNewNodesrv(const Sp<Node>& node, int confirm)//服务器端分桶
-{
-   auto b = findBucket(node->getId());//查找节点属于哪个桶
-    if (b == buckets.end())
-        return false;
 
-    if (confirm == 2)
-        b->time = std::chrono::steady_clock::now();
-
-    for (auto& n : b->nodes) {//查找桶内有无此节点
-        if (n == node)
-            return false;
-    }
-    bool mybucket = contains(b, selfId);//本地节点是否属于b桶
-    if (mybucket) {
-        //grow_time = now;
-    }
-
-    if (b->nodes.size() >= MAX_NODE) {//如果大于8个节点就分桶
-        if (mybucket || depth(b) < 11) {  //深度11层
-            split(b);
-            return onNewNodesrv(node, confirm);
-        }
-        /* No space for this node.  Cache it away for later. */
-        if (confirm or not b->cached)
-            b->cached = node;
-    } else {
-        /* Create a new node. */
-        b->nodes.emplace_front(node);
-
-    }
-    return true;
-}
 bool Bucket::split(const Kbucket::iterator &b)
 {
     NodeId new_first_id;

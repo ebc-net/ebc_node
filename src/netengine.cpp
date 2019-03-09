@@ -6,7 +6,7 @@
 #ifdef ON_QT
 #include <QtGlobal>
 #endif
-
+#include <chrono>//C++ time
 namespace NET
 {
 NetEngine::NetEngine(const NodeId _id, const bool _isServer):self(_id), isServer(_isServer),kad(_id)
@@ -83,39 +83,39 @@ void NetEngine::startServer()
            //int epoll_wait(int epfd, struct epoll_event *event, int maxevents, int timeout);
            ret = UDT::epoll_wait(epollFd, &readfds, nullptr, &errfds, 5*1000);//阻塞，处理发生的所有事件，存入readfds中
            //ret = UDT::epoll_wait(epollFd, &readfds, nullptr, 5*1000);
-           if(ret < 0)//返回值－1出错，0超时，正常返回值是fd就绪的个数
-           {
-               QLOG_ERROR()<<"UDT epoll_wait error"<<UDT::getlasterror().getErrorMessage();
-               return ;
-           }
-           else if(ret == 0)
-               continue;
+             if(ret < 0)//返回值－1出错，0超时，正常返回值是fd就绪的个数
+             {
+                 QLOG_ERROR()<<"UDT epoll_wait error"<<UDT::getlasterror().getErrorMessage();
+                 return ;
+             }
+                      else if(ret == 0)
+             continue;
 
-           for(auto& sock:errfds)
-           {
-			   //客户端发消息过来
-			   int state=0;
-			   int len = sizeof(state);
-               UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);//用于获取任意类型、任意状态套接口的选项当前值，并把结果存入optval
-			   //对服务器来说没有CONNECTING状态，因为它不会去主动连接
-			   if(CLOSED == state || BROKEN == state )
-			   {
-                   QLOG_INFO()<<"client disconnected";
-				   UDT::epoll_remove_usock(epollFd, sock);
-				   UDT::close(sock);
-                   //NetEngine::delClientNode(sock);
-                   continue;
-			   }
-		   }
-           for(auto& sock:readfds)//可读，有消息发来
-           {
-               if(sock == srv) //客户端连接成功
-               {
-                   if((cli = UDT::accept(srv, (struct sockaddr*)&client, &sock_len)) < 0)
-                   {
-                       QLOG_ERROR()<<"UDT accept error"<<UDT::getlasterror().getErrorMessage();
-                       continue;
-                   }
+                      for(auto& sock:errfds)
+                      {
+                          //客户端发消息过来
+                          int state=0;
+                          int len = sizeof(state);
+                          UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);//用于获取任意类型、任意状态套接口的选项当前值，并把结果存入optval
+                          //对服务器来说没有CONNECTING状态，因为它不会去主动连接
+                          if(CLOSED == state || BROKEN == state )
+                          {
+                              QLOG_INFO()<<"client disconnected";
+                              UDT::epoll_remove_usock(epollFd, sock);
+                              UDT::close(sock);
+                              //NetEngine::delClientNode(sock);
+                              continue;
+                          }
+                      }
+                      for(auto& sock:readfds)//可读，有消息发来
+                      {
+                          if(sock == srv) //客户端连接成功
+                          {
+                              if((cli = UDT::accept(srv, (struct sockaddr*)&client, &sock_len)) < 0)
+                              {
+                                  QLOG_ERROR()<<"UDT accept error"<<UDT::getlasterror().getErrorMessage();
+                                  continue;
+                              }
 
                    QLOG_INFO()<<"peer info:"<<inet_ntoa(client.sin_addr)<<"@"<<ntohs(client.sin_port);
                    QLOG_INFO()<<"cli = "<<cli;
@@ -143,7 +143,10 @@ void NetEngine::startServer()
 
                }
            }
-       }
+
+
+
+         }
        }
     );
    server.detach();
@@ -151,12 +154,14 @@ void NetEngine::startServer()
 
 void NetEngine::startClient(const std::string ip, const uint16_t port)//指定服务器的ip和端口号
 {
-   boot_sock = UDT::socket(AF_INET, SOCK_DGRAM, 0);
-   if(boot_sock < 0)
-   {
-       QLOG_ERROR()<<"UDT socket error"<<UDT::getlasterror().getErrorMessage();
-       return ;
-   }
+    maintenanceTime = clock::now();
+
+    boot_sock = UDT::socket(AF_INET, SOCK_DGRAM, 0);
+    if(boot_sock < 0)
+    {
+        QLOG_ERROR()<<"UDT socket error"<<UDT::getlasterror().getErrorMessage();
+        return ;
+    }
 
    struct sockaddr_in srv_addr;
    srv_addr.sin_addr.s_addr = inet_addr(ip.c_str());
@@ -214,8 +219,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
                 QLOG_ERROR()<<"UDT epoll_wait error"<<UDT::getlasterror().getErrorMessage();
                 return ;
             }
-            else if(ret == 0)
-                continue;
+
 
 
             for(auto& sock:errfds)   //C++11 新特性
@@ -312,7 +316,6 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
                     addtobkt(node);//打洞成功的节点加入本地（客户端的）K桶简化
                 }
             }
-
             /*有消息达到*/
             for(auto& sock:readfds)
             {
@@ -348,64 +351,44 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
 
                 handleMsg(sock, epollFd) ;
             }
+            //桶维护(失效节点&neighbourhood）
+            auto sendFindNode = [&](Sp<Node> &dstNode, NodeId targetId)
+            {
+                config::EbcNode targetNode;
+                std::string tmpId;
+                Node::NodeId2String(targetId,tmpId);
+                targetNode.set_id(tmpId);
+                msgPack sendMsg(self.getId());
+                int msg_len = sendMsg.pack(config::MsgType::GET_NODE, &targetNode, buf, sizeof(buf));//只传ID去
+                if(msg_len < 0)
+                    return ;
 
+                UDT::sendmsg(dstNode->getSock(), buf, msg_len);
+            };
+            if(clock::now() >= maintenanceTime)
+            {
+
+                if( kad.bucketMaintenance( sendFindNode,false ))
+                {
+                    maintenanceTime = clock::now()+ seconds(5);
+                    QLOG_INFO()<<"send get_node for bucket maintenance";
+                }
+                else
+                {
+                    maintenanceTime = clock::now()+ seconds(60);
+
+                    if(kad.grow_time >= clock::now() - seconds(60))//mybucket分裂后60s再扩桶
+                    {
+                        kad.bucketMaintenance(sendFindNode,true);
+                    }
+                }
+            }
         }
     });
     boot_thread.detach();
 
 }
 
-//void NetEngine::printNodesInfo(int type)
-//{
-//    QLOG_INFO()<<"PEER INFO :";
-//    if(type == 1)
-//    {
-//        QLOG_INFO()<<"online count = "<<peerNode.size();
-//        for(auto &node:peerNode)
-//            Node::printNodeId(node.second.getId());
-
-//        return ;
-//    }
-//    for(auto &node:peerNode)
-//    {
-//        Node::printNode(node.second);
-//    }
-
-//    if(isServer)
-//    {
-//        QLOG_INFO()<<"SELF IS A SERVER"<<"CLIENT INFO";
-//        for(auto &node:clientNode)
-//        {
-//            Node::printNode(node.second);
-//        }
-//    }
-//}
-
-//void NetEngine::sendHello()
-//{
-//    std::thread test = std::thread([&]()
-//    {
-//        while(boot_thread_flag)
-//        {
-//            std::this_thread::sleep_for(std::chrono::seconds(5));
-//            msgPack helloMsg(self.getId());
-//            char hello_buf[64]="";
-//            char msg_buf[1024]="";
-//            static int count = 0;
-//            sprintf(hello_buf, "hello count = %d", count++);
-//            for(auto it:peerNode)
-//            {
-//                auto& peer = it.second;
-//                int ret = helloMsg.pack(config::MsgType::REP, hello_buf, msg_buf, sizeof(msg_buf), config::MsgSubType::DATA, peer.getId());
-//                UDT::sendmsg(peer.getSock(), msg_buf, ret);
-//                //UDT::send(peer.getSock(), msg_buf, ret, 0);
-//            }
-//        }
-
-//    });
-
-//    test.detach();//线程结束
-//}
 
 void NetEngine::setUdtOpt(const UDTSOCKET &sock)//srv
 {
@@ -497,8 +480,6 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
             uint32_t nat = parNat(msg.nodes().ebcnodes(0).port_nat());//节点端口(网络字节序)和NAT类型
             int addr_len = sizeof(clientInfo);
             UDT::getpeername(sock, (struct sockaddr *)&clientInfo, &addr_len);//存入clientInfo
-            //getsockname函数用于获取与某个套接字关联的本地协议地址
-            //getpeername函数用于获取与某个套接字关联的外地协议地址
             memset(buf, 0, sizeof(buf));
             config::EbcNode punch_node;
             msgPack send_msg(self.getId());//msgPack::msgPack(const NET::NodeId &_id):self_id(_id)
@@ -528,18 +509,42 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
 
             //加K桶
             Sp<Node> clinode = std::make_shared<Node> (cli_id);
-            //struct sockaddr =
             clinode->setAddr((struct sockaddr*)&clientInfo);
             clinode->setSock(sock);
-            //clinode.setNat();
             addtobkt(clinode);
 
-            //addClientNode(msg.src_id(), clientInfo, nat, sock);
-            //addCliNodetobkt(msg.src_id(), clientInfo, nat, sock);//把当前和服务器通信的节点加入服务器K桶 简化
+
         }
-        else //作为节点，就从以连接节点取信息 等补充
+        else //peer收到GET_NODE后的动作
         {
-            //客户端GETNODE
+            struct sockaddr_in peerInfo;//对端节点的信息
+            uint32_t nat = parNat(msg.nodes().ebcnodes(0).port_nat());//节点端口(网络字节序)和NAT类型
+            int addr_len = sizeof(peerInfo);
+            UDT::getpeername(sock, (struct sockaddr *)&peerInfo, &addr_len);
+            memset(buf, 0, sizeof(buf));
+            config::EbcNode punch_node;
+            msgPack send_msg(self.getId());
+            punch_node.set_ip(peerInfo.sin_addr.s_addr);
+            punch_node.set_port_nat(comPortNat(peerInfo.sin_port, nat));
+            punch_node.set_id(msg.src_id());
+            ret = send_msg.pack(config::MsgType::PUNCH, &punch_node, buf, sizeof(buf));
+            if(ret < 0)
+                break;
+
+            //开始查找节点并发送打洞信息
+            NodeId peer_id;
+            Node::String2NodeId(msg.src_id(),peer_id);
+            //此处需要修改，查找当间cli_id所在桶的所有节点
+            auto targetnodes = kad.findClosestNodes(peer_id,8);
+            for (auto &node:targetnodes)
+            {
+                auto tmp = nodes.add_ebcnodes();
+                tmp->set_id(&node->getId(),ID_LENGTH);
+                tmp->set_ip(node->getAddr().getIPv4().sin_addr.s_addr);
+                tmp->set_port_nat(comPortNat(node->getAddr().getIPv4().sin_port,node->getNatType()));
+                UDT::sendmsg(node->getSock(),buf,ret);
+
+            }
         }
 
         memset(buf, 0, sizeof(buf));
@@ -562,12 +567,14 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                 node = nodes.ebcnodes(i);
                 //开始UDT的打洞
                 UDTSOCKET sock = UDT::INVALID_SOCK;
+                NodeId tId{};
+                Node::String2NodeId(node.id(), tId);
+                if(kad.findNode(tId))
+                    continue;
                 sock = startPunch(epollFd, node.ip(), parPort(node.port_nat()));
                 if(sock == UDT::INVALID_SOCK)
                     continue;
 
-                NodeId tId{};
-                Node::String2NodeId(node.id(), tId);
                 Sp<Node> lNode = std::make_shared<Node>(tId);
                 lNode->setSock(sock);
                 struct sockaddr_in peer_addr;
@@ -591,13 +598,13 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
         node = nodes.ebcnodes(0);
         //开始UDT的打洞
         UDTSOCKET sock = UDT::INVALID_SOCK;
-        sock = startPunch(epollFd, node.ip(), parPort(node.port_nat()));
-
-
-        if(sock == UDT::INVALID_SOCK)
-            break;
         NodeId tId{};
         Node::String2NodeId(node.id(), tId);
+        if(kad.findNode(tId))
+            break;
+        sock = startPunch(epollFd, node.ip(), parPort(node.port_nat()));
+        if(sock == UDT::INVALID_SOCK)
+            break;
         Sp<Node> lNode = std::make_shared<Node>(tId);
         lNode->setSock(sock);
         struct sockaddr_in peer_addr;
@@ -606,7 +613,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
         peer_addr.sin_family = AF_INET;
         lNode->setAddr((struct sockaddr*)&peer_addr);
         sockNodePair[sock]= lNode;
-        //addPeertobkt(node.id(), node.ip(), node.port_nat(),sock);//打洞成功的节点加入本地（客户端的）K桶
+
     }
         break;
     default:
@@ -654,7 +661,7 @@ int NetEngine::startPunch(int& epollFd, uint32_t ip, uint16_t port)//对端的IP
 //加服务器K桶
 void NetEngine::addtobkt(const Sp<Node> &node)
 {
-    kad.onNewNode(node,2);
+    kad.onNewNode(node,2,isServer);
 }
 
 void NetEngine::setNodeExpired(const UDTSOCKET &sock)
@@ -662,171 +669,5 @@ void NetEngine::setNodeExpired(const UDTSOCKET &sock)
     Sp<Node>& epnode = sockNodePair[sock];
     epnode->setExpired();
 }
-
-#if 0
-void NetEngine::addClientNode(const NodeId &_id,const uint32_t &ip,const uint32_t &port_nat,const UDTSOCKET& sock)
-{
-   NET::Node node(_id);
-   SockAddr addr;
-   Node::NatType nat = (Node::NatType)parNat(port_nat);
-   addr.setPort(parPort(port_nat));
-   addr.setIPv4(ip);
-
-   node.setAddr(addr);
-   node.setNat(nat);
-   node.setSock(sock);
-
-   clientNode.insert(std::make_pair(_id, node));
-   //clientNode.insert(std::pair<NodeId, Node>(_id, node)); //这两种写法都可
-
-   sockNodePair[sock] = _id;
-}
-              //addClientNode(msg.src_id(), clientInfo, nat, sock);
-void NetEngine::addClientNode(const std::string &_id, const struct sockaddr_in& _addr, const uint32_t &nat, const UDTSOCKET &sock)
-{
-    NodeId nid;
-    Node::String2NodeId(_id, nid);
-   NET::Node node(nid);
-   SockAddr addr;
-   addr.setPort(_addr.sin_port);
-   addr.setIPv4(_addr.sin_addr.s_addr);
-
-   node.setAddr(addr);
-   node.setNat((const Node::NatType)nat);
-   node.setSock(sock);
-   Node::NodeState state=Node::NodeState::CONNECTED;
-   node.setState(state);
-
-   clientNode.insert(std::make_pair(nid, node));
-   //clientNode.insert(std::pair<NodeId, Node>(_id, node)); //这两种写法都可
-
-   sockNodePair[sock] = nid;
-}
-
-void NetEngine::addClientNode(const std::string &_id,const uint32_t &ip,const uint32_t &port_nat,const UDTSOCKET &sock)
-{
-    NodeId nid;
-    Node::String2NodeId(_id, nid);
-
-    addClientNode(nid, ip, port_nat, sock);
-}
-#endif
-
-#if 0
-bool NetEngine::findClientNode(const NodeId &_id, Node &node)
-{
-    auto it = clientNode.find(_id);
-    if(it == clientNode.end())
-        return false;
-
-    //node = *it;  //这个为什么不行？？？？
-    node = clientNode[_id];
-
-    return true;
-}
-bool NetEngine::findClientNode(const std::string &_id, Node &node)
-{
-   NodeId tmp;
-   Node::String2NodeId(_id, tmp);
-   findClientNode(tmp, node);
-}
-
-void NetEngine::delClientNode(const NodeId &_id)
-{
-    auto it = clientNode.find(_id);
-    if(it != clientNode.end())
-        clientNode.erase(it);
-}
-
-void NetEngine::delClientNode(const std::string &_id)
-{
-   NodeId tmp;
-   Node::String2NodeId(_id, tmp);
-   delClientNode(tmp);
-}
-
-void NetEngine::delClientNode(const UDTSOCKET &sock)
-{
-   auto it = sockNodePair.find(sock);
-   if(it == sockNodePair.end())
-       return ;
-   delClientNode(it->second) ;
-   sockNodePair.erase(it);
-}
-
-void NetEngine::addPeerNode(const NodeId &_id,const uint32_t &ip,const uint32_t &port_nat,const UDTSOCKET sock)
-{
-   NET::Node node(_id);
-   SockAddr addr;
-   Node::NatType nat = (Node::NatType)parNat(port_nat);
-   addr.setPort(parPort(port_nat));
-   addr.setIPv4(ip);
-
-   node.setAddr(addr);
-   node.setNat(nat);
-   node.setSock(sock);
-
-   peerNode.insert(std::make_pair(_id, node));
-   sockNodePair[sock] = _id;
-}
-
-void NetEngine::addPeerNode(const std::string &_id,const uint32_t &ip,const uint32_t &port_nat,const UDTSOCKET sock)
-{
-    NodeId nid;
-    Node::String2NodeId(_id, nid);
-
-    addPeerNode(nid, ip, port_nat, sock);
-}
-#endif
-
-#if 0
-bool NetEngine::findPeerNode(const NodeId &_id, Node &node)
-{
-    auto it = peerNode.find(_id);
-    if(it == peerNode.end())
-        return false;
-
-    //node = *it;
-    node = peerNode[_id];
-
-    return true;
-}
-
-bool NetEngine::findPeerNode(const std::string &_id, Node &node)
-{
-   NodeId tmp;
-   Node::String2NodeId(_id, tmp);
-   findPeerNode(tmp, node);
-}
-
-void NetEngine::updatePeerNode(const NodeId &_id, const Node &node)
-{
-   peerNode[_id]  = node;
-}
-
-void NetEngine::delPeerNode(const NodeId &_id)
-{
-    auto it = peerNode.find(_id);
-    if(it != peerNode.end())
-        peerNode.erase(it);
-}
-
-void NetEngine::delPeerNode(const std::string &_id)
-{
-
-   NodeId tmp;
-   Node::String2NodeId(_id, tmp);
-   delPeerNode(tmp);
-}
-
-void NetEngine::delPeerNode(const UDTSOCKET &sock)
-{
-   auto it = sockNodePair.find(sock);
-   if(it == sockNodePair.end())
-       return ;
-   delPeerNode(it->second) ;
-   sockNodePair.erase(it);
-}
-#endif
 }
 
