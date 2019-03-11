@@ -24,7 +24,7 @@ NodeId Bucket::middle(const Kbucket::const_iterator &it) const
 
     return newId;
 }
-
+//这个函数返回的8个ID不保证是全活，此处感觉可以改进，只返回活节点,效率应该提高了一些
 std::vector<Sp<Node> > Bucket::findClosestNodes(const NodeId &id, size_t count)
 {
     std::vector<Sp<Node>> nodes;
@@ -35,7 +35,7 @@ std::vector<Sp<Node> > Bucket::findClosestNodes(const NodeId &id, size_t count)
 
     auto sortedBucketInsert = [&](const struct bucket &b) {
         for (auto n : b.nodes) {
-            if (not n->isExpired())
+            if ( n->isExpired())
                 continue;
 
             auto here = std::find_if(nodes.begin(), nodes.end(),
@@ -168,15 +168,6 @@ bool Bucket::findNode(const NodeId &id)
     return false;
 }
 
-#if 0
-Bucket::Kbucket::iterator Bucket::neighbourhoodMaintenance()
-{
-    auto b = findBucket(selfId);
-    return b;
-    
-}
-#endif
-
 bool Bucket::bucketMaintenance(std::function<void(Sp<Node> &dstNode, NodeId targetId)> sendFindNode, bool neighbour)
 {
     int goodNode = 0;
@@ -278,12 +269,6 @@ std::list<Sp<Node> > Bucket::repNodes(const NodeId &id)//服务器REP节点的96
     nodes.splice(nodes.end(),tmp);
     NodeId id_first = it->first;
 
-    //    QLOG_WARN()<<"bit is : "<<bit;
-    //    QLOG_WARN()<<"first node id is : ";
-    //    Node::printNodeId(id_first);
-    //    QLOG_WARN()<<"REP NODES number is : "<<nodes.size();
-
-
     for( ;bit >= 0; bit--)
     {
         int i = bit/8;
@@ -292,14 +277,7 @@ std::list<Sp<Node> > Bucket::repNodes(const NodeId &id)//服务器REP节点的96
         auto it = findBucket(id_first);
         auto tmp = it->nodes;
         nodes.splice(nodes.end(),tmp);
-
-//        QLOG_WARN()<<"first node id is : ";
-//        Node::printNodeId(id_first);
-
-
         id_first[i] &= (0xfe <<(7 - j));
-
-//        QLOG_WARN()<<"REP NODES number is : "<<nodes.size();
     }
 
     return nodes;
