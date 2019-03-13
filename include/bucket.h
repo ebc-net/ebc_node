@@ -12,10 +12,9 @@ namespace NET
 {
 struct bucket {
     bucket() : cached() {}
-    bucket(sa_family_t af, const NodeId& f = {}, time_point t = time_point::min()): af(af), first(f), time(t), cached() {}
+    bucket(sa_family_t af, const NodeId& f = {}, time_point t = time_point::min()): af(af), first(f), cached() {}
     sa_family_t af {0};
     NodeId first {};
-    time_point time {time_point::min()}; /* time of last reply in this bucket */
     std::list<Sp<Node>> nodes {};
     Sp<Node> cached;                    /* the address of a likely candidate */
 

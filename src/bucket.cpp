@@ -1,6 +1,16 @@
 #include "bucket.h"
 #include <algorithm>
 #include "QsLog.h"
+#include<random>
+#include<ctime>
+
+
+static std::mt19937 rd(std::chrono::system_clock::now().time_since_epoch().count());
+#ifdef _WIN32
+static std::uniform_int_distribution<int> rand_byte{ 0, std::numeric_limits<uint8_t>::max() };
+#else
+static std::uniform_int_distribution<uint8_t> rand_byte;
+#endif
 
 namespace NET
 {
@@ -24,7 +34,7 @@ NodeId Bucket::middle(const Kbucket::const_iterator &it) const
 
     return newId;
 }
-//这个函数返回的8个ID不保证是全活，此处感觉可以改进，只返回活节点,效率应该提高了一些
+
 std::vector<Sp<Node> > Bucket::findClosestNodes(const NodeId &id, size_t count)
 {
     std::vector<Sp<Node>> nodes;
@@ -41,8 +51,7 @@ std::vector<Sp<Node> > Bucket::findClosestNodes(const NodeId &id, size_t count)
             auto here = std::find_if(nodes.begin(), nodes.end(),
                                      [&id,&n](Sp<Node> &node) {
                 return Node::xorCmp(id, n->getId(), node->getId()) < 0;
-            }
-            );
+            });
             nodes.insert(here, n);
         }
     };
@@ -59,7 +68,6 @@ std::vector<Sp<Node> > Bucket::findClosestNodes(const NodeId &id, size_t count)
             itp = (itp == buckets.begin()) ? buckets.end() : std::prev(itp);
         }
     }
-
     // shrink to the count closest nodes.
     if (nodes.size() > count) {
         nodes.resize(count);
@@ -72,7 +80,7 @@ Bucket::Kbucket::iterator Bucket::findBucket(const NodeId &id)
     if(isEmpty())
         return buckets.end();
 
-    auto it = buckets.begin(); //这里为什么不能把it定义为引用?
+    auto it = buckets.begin();
     while(it != buckets.end())
     {
         if(std::next(it) == buckets.end())
@@ -95,12 +103,11 @@ NodeId Bucket::randomId(const Kbucket::const_iterator &b)
     NodeId id_return;
     std::copy_n(b->first.cbegin(),bt, id_return.begin());
     id_return[bt] = b->first[bt] & (0xFF00 >> (bit % 8));
-    id_return[bt] |= 0xff&rand()%8 >> (bit % 8);
+    id_return[bt] |=  rand_byte(rd) >> (bit % 8);
     for (unsigned i = bt + 1; i < ID_LENGTH; i++)
-        id_return[i] = 0xff&rand()%8;
+        id_return[i] = rand_byte(rd);
     return id_return;
 }
-
 
 unsigned Bucket::depth(const Kbucket::const_iterator& it) const
 {
@@ -111,7 +118,8 @@ unsigned Bucket::depth(const Kbucket::const_iterator& it) const
 	return std::max(bit1, bit2)+1;
 }
 
-bool Bucket::contains(const Kbucket::const_iterator &it, const NodeId &id) const//判断是否在bucket中
+//判断是否在bucket中
+bool Bucket::contains(const Kbucket::const_iterator &it, const NodeId &id) const
 {
     return Node::idCmd(it->first, id) <= 0
             && (std::next(it) == buckets.end()  || Node::idCmd(id, std::next(it)->first) < 0);
@@ -122,9 +130,6 @@ bool Bucket::onNewNode(const Sp<Node>& node, int confirm, bool isServer)
     auto b = findBucket(node->getId());
     if (b == buckets.end())
         return false;
-
-    if (confirm == 2)
-        b->time = clock::now();
 
     for (auto& n : b->nodes) {
         if (n == node)
@@ -137,11 +142,9 @@ bool Bucket::onNewNode(const Sp<Node>& node, int confirm, bool isServer)
         grow_time = clock::now();
     }
     if (b->nodes.size() >= MAX_NODE)
-    {//大于8个开始分桶
-        //QLOG_WARN()<<mybucket;
+    {
         int dNum = isServer?11:6;
         if (mybucket || depth(b) < dNum) {
-            //QLOG_WARN()<<"split !!";
             split(b);
             return onNewNode(node, confirm);
         }
@@ -296,7 +299,7 @@ bool Bucket::split(const Kbucket::iterator &b)
 	QLOG_WARN()<<"new bucket : ";
     Node::printNodeId(new_first_id);
     // Insert new bucket
-    buckets.insert(std::next(b), bucket {b->af, new_first_id, b->time});//从next(b)之前开始插入，
+    buckets.insert(std::next(b), bucket {b->af, new_first_id,});//从next(b)之前开始插入，
 
     // Re-assign nodes重新分派节点
     std::list<Sp<Node>> nodes {};//std::shared_ptr<T>;

@@ -1,4 +1,4 @@
-#include "netengine.h"
+﻿#include "netengine.h"
 #include "bucket.h"
 #include <iostream>
 #include <cstring>
@@ -163,10 +163,10 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
         return ;
     }
 
-   struct sockaddr_in srv_addr;
-   srv_addr.sin_addr.s_addr = inet_addr(ip.c_str());
-   srv_addr.sin_port = htons(port);
-   srv_addr.sin_family = AF_INET;
+    struct sockaddr_in srv_addr;
+    srv_addr.sin_addr.s_addr = inet_addr(ip.c_str());
+    srv_addr.sin_port = htons(port);
+    srv_addr.sin_family = AF_INET;
 
     setUdtOpt(boot_sock);
     if(UDT::bind(boot_sock, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0)
@@ -220,9 +220,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
                 return ;
             }
 
-
-
-            for(auto& sock:errfds)   //C++11 新特性
+            for(auto& sock:errfds)
             {
                 UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);
                 //QLOG_INFO()<<"in errfds state = "<<state;
@@ -249,7 +247,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
                 }
             }
             /*可写，这里表示connect连接状态, 在套接字可写后，获取套接字的状态，根据不同的状态可以知道socket的连接状态*/
-            for(auto& sock:writefds)   //C++11 新特性
+            for(auto& sock:writefds)
             {
                 //后面仔细考虑一下，这个地方应该不需要判断STATE了
                 UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);
@@ -507,7 +505,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
 
             }
 
-            //加K桶
+            //把对方节点加入服务器的K桶
             Sp<Node> clinode = std::make_shared<Node> (cli_id);
             clinode->setAddr((struct sockaddr*)&clientInfo);
             clinode->setSock(sock);
@@ -545,6 +543,8 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                 UDT::sendmsg(node->getSock(),buf,ret);
 
             }
+
+            //这里感觉也需要把对方加入自己的桶内？
         }
 
         memset(buf, 0, sizeof(buf));
@@ -613,6 +613,8 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
         peer_addr.sin_family = AF_INET;
         lNode->setAddr((struct sockaddr*)&peer_addr);
         sockNodePair[sock]= lNode;
+
+        //此处是否也需要将对方先加入自己桶
 
     }
         break;
