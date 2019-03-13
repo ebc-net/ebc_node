@@ -6,7 +6,7 @@
 #include "udt.h"
 #include "sockaddr.h"
 #include "utils.h"
-
+#include"nodeid.h"
 namespace NET{
 class Node
 {
@@ -33,7 +33,7 @@ public:
 
 
     /*******************************function*****************/
-    Node():id({0}),state(DISCONNECTED), nat(SYMMTRIC), ping_count(0) {}
+    Node():id(), state(DISCONNECTED), nat(SYMMTRIC), ping_count(0) {}
     Node(const NodeId & _id, const SockAddr _addr=nullptr, const NatType _nat=SYMMTRIC, const NodeState  _state=DISCONNECTED);
 
     const NodeId& getId();
@@ -58,20 +58,10 @@ public:
 
 
     /**************static function******************/
-    static void printNodeId(const NodeId &);
-    static void printNodeId(const std::string& );
     static void printNodeState(const NodeState _state);
     static void printNatType(const NatType _nat);
-    static void NodeId2String(const NodeId&, std::string &);
-    static void String2NodeId(const std::string&, NodeId&);
     static void printNode(Node &);
-    static int lowBit(const NodeId &);
-    static int idCmd(const NodeId& _id1, const NodeId& _id2);
-    static int xorCmp(const NodeId& _id, const NodeId& _id1, const NodeId& _id2);
-
-    inline int idCmp(const NodeId&);
-    inline unsigned int commBit(const NodeId&);
-    inline void setExpired() {state = NodeState::DISCONNECTED;};//失效
+    inline void setExpired() {state = NodeState::DISCONNECTED;}//失效
     inline bool isExpired() { return state == Node::DISCONNECTED;}
 
 private:

@@ -111,9 +111,7 @@ void msgPack::msgPrint()
 {
    QLOG_INFO()<<"version:"<<ebcMsg.version().c_str();
    QLOG_INFO()<<"src_id:";
-   Node::printNodeId(ebcMsg.src_id());
-   QLOG_INFO()<<"dst_id:";  //注意，无法打印
-   Node::printNodeId(ebcMsg.dst_id());
+   NodeId(ebcMsg.src_id()).printNodeId();
 
    switch (ebcMsg.type()) {
    case config::MsgType::GET_DATA:
@@ -159,7 +157,7 @@ void msgPack::msgPrint()
        for(int i=0; i<node_count; ++i)
        {
            QLOG_INFO()<<"node id ";
-           Node::printNodeId(nodes.ebcnodes(i).id());
+           NodeId(nodes.ebcnodes(i).id()).printNodeId();
            QLOG_INFO()<<"node ip "<<nodes.ebcnodes(i).ip();//注意，无法打印
            QLOG_INFO()<<"node port "<<nodes.ebcnodes(i).port_nat();
        }

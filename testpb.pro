@@ -17,12 +17,13 @@ DEFINES += ON_QT  #区分linux上的服务器程序与QT上的程序
 SOURCES += \
     src/main.cpp \
     src/msg.pb.cpp \
+    src/nodeid.cpp \
     src/node.cpp \
     src/bucket.cpp \
     src/netengine.cpp \
     src/msgpack.cpp \
     src/utils.cpp \
-    src/logsignal.cpp
+    src/logsignal.cpp \
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -62,7 +63,8 @@ HEADERS += \
     include/msgpack.h \
     include/ebcCryptoLib.h \
     include/QsLog.h \
-    include/logsignal.h
+    include/logsignal.h \
+    include/nodeid.h
 
 RESOURCES += \
     qml.qrc

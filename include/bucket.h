@@ -4,7 +4,7 @@
 #include <list>
 #include <functional>
 #include<bitset>
-
+#include "nodeid.h"
 #include "node.h"
 #include "utils.h"
 

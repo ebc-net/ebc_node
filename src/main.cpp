@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
     NET::NodeId id;
     ebcCryptoLib cl;
     cl.randomNbytes(id.data(), ID_LENGTH);
-    NET::Node::printNodeId(id);
+    id.printNodeId();
     NET::NetEngine net(id);
     Bucket kad(id);
 #if 1

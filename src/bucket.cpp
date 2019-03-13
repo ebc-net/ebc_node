@@ -22,8 +22,8 @@ Bucket::Bucket(const NodeId &_id):selfId(_id)
 
 NodeId Bucket::middle(const Kbucket::const_iterator &it) const
 {
-    int bit1 = Node::lowBit(it->first);
-    int bit2 = std::next(it)==buckets.end() ? -1:Node::lowBit(std::next(it)->first);
+    int bit1 = it->first.lowBit();
+    int bit2 = std::next(it)==buckets.end() ? -1:std::next(it)->first.lowBit();
 
     int bit = std::max(bit1, bit2) + 1;
     if(bit > 8*ID_LENGTH)
@@ -50,7 +50,7 @@ std::vector<Sp<Node> > Bucket::findClosestNodes(const NodeId &id, size_t count)
 
             auto here = std::find_if(nodes.begin(), nodes.end(),
                                      [&id,&n](Sp<Node> &node) {
-                return Node::xorCmp(id, n->getId(), node->getId()) < 0;
+                return id.xorCmp(n->getId(), node->getId()) < 0;
             });
             nodes.insert(here, n);
         }
@@ -85,7 +85,7 @@ Bucket::Kbucket::iterator Bucket::findBucket(const NodeId &id)
     {
         if(std::next(it) == buckets.end())
             return  it;
-        if(Node::idCmd(id, std::next(it)->first) < 0)
+        if(id < std::next(it)->first)
             return it;
 		it = std::next(it);
     }
@@ -93,9 +93,8 @@ Bucket::Kbucket::iterator Bucket::findBucket(const NodeId &id)
 
 NodeId Bucket::randomId(const Kbucket::const_iterator &b)
 {
-    int bit1 = Node::lowBit(b->first);
-    int bit2 = std::next(b)==buckets.end() ? -1:Node::lowBit(std::next(b)->first);
-
+    int bit1 = b->first.lowBit();
+    int bit2 = std::next(b)==buckets.end() ? -1:std::next(b)->first.lowBit();
     int bit = std::max(bit1, bit2) + 1;
     if(bit > 8*ID_LENGTH)
         return b->first;
@@ -113,16 +112,16 @@ unsigned Bucket::depth(const Kbucket::const_iterator& it) const
 {
 	if (it == buckets.end())
 	  return 0;
-	int bit1 = Node::lowBit(it->first);
-	int bit2 = std::next(it) != buckets.end() ? Node::lowBit(std::next(it)->first) : -1;
+    int bit1 = it->first.lowBit();
+    int bit2 = std::next(it) != buckets.end() ? std::next(it)->first.lowBit() : -1;
 	return std::max(bit1, bit2)+1;
 }
 
 //判断是否在bucket中
 bool Bucket::contains(const Kbucket::const_iterator &it, const NodeId &id) const
 {
-    return Node::idCmd(it->first, id) <= 0
-            && (std::next(it) == buckets.end()  || Node::idCmd(id, std::next(it)->first) < 0);
+    return (it->first < id ||it->first == id )
+            && ((std::next(it) == buckets.end()) || (id < std::next(it)->first)) ;
 }
 
 bool Bucket::onNewNode(const Sp<Node>& node, int confirm, bool isServer)
@@ -165,7 +164,7 @@ bool Bucket::findNode(const NodeId &id)
     auto it = findBucket(id);
     for (auto & n : it->nodes)
     {
-        if(Node::idCmd(id,n->getId()) == 0 )
+        if(id == n->getId())
             return true;
     }
     return false;
@@ -297,7 +296,7 @@ bool Bucket::split(const Kbucket::iterator &b)
     }
 
 	QLOG_WARN()<<"new bucket : ";
-    Node::printNodeId(new_first_id);
+    new_first_id.printNodeId();
     // Insert new bucket
     buckets.insert(std::next(b), bucket {b->af, new_first_id,});//从next(b)之前开始插入，
 
@@ -338,10 +337,10 @@ void Bucket::dump() const
 	for(auto& b: buckets)
 	{
 		QLOG_WARN()<<"bucket size= "<<b.nodes.size();
-		Node::printNodeId(b.first);
+        b.first.printNodeId();
 		for(auto& n: b.nodes)
 		{
-			Node::printNodeId(n->getId());
+            n->getId().printNodeId();
 		}
 	}
 	QLOG_WARN()<<"k-bucket num = "<<buckets.size();

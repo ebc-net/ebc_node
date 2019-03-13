@@ -353,9 +353,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
             auto sendFindNode = [&](Sp<Node> &dstNode, NodeId targetId)
             {
                 config::EbcNode targetNode;
-                std::string tmpId;
-                Node::NodeId2String(targetId,tmpId);
-                targetNode.set_id(tmpId);
+                targetNode.set_id(targetId.toString());
                 msgPack sendMsg(self.getId());
                 int msg_len = sendMsg.pack(config::MsgType::GET_NODE, &targetNode, buf, sizeof(buf));//只传ID去
                 if(msg_len < 0)
@@ -492,8 +490,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
 
             //开始查找节点并发送打洞信息
             //std::list<Sp<Node>> repNodes(const NodeId &id);
-            NodeId cli_id;
-            Node::String2NodeId(msg.src_id(),cli_id);
+            NodeId cli_id(msg.src_id());
             std::list<Sp<Node>> sendnodes = kad.repNodes(cli_id);
             for (auto &node:sendnodes)
             {
@@ -530,8 +527,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                 break;
 
             //开始查找节点并发送打洞信息
-            NodeId peer_id;
-            Node::String2NodeId(msg.src_id(),peer_id);
+            NodeId peer_id(msg.src_id());
             //此处需要修改，查找当间cli_id所在桶的所有节点
             auto targetnodes = kad.findClosestNodes(peer_id,8);
             for (auto &node:targetnodes)
@@ -567,8 +563,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                 node = nodes.ebcnodes(i);
                 //开始UDT的打洞
                 UDTSOCKET sock = UDT::INVALID_SOCK;
-                NodeId tId{};
-                Node::String2NodeId(node.id(), tId);
+                NodeId tId{node.id()};
                 if(kad.findNode(tId))
                     continue;
                 sock = startPunch(epollFd, node.ip(), parPort(node.port_nat()));
@@ -598,8 +593,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
         node = nodes.ebcnodes(0);
         //开始UDT的打洞
         UDTSOCKET sock = UDT::INVALID_SOCK;
-        NodeId tId{};
-        Node::String2NodeId(node.id(), tId);
+        NodeId tId{node.id()};
         if(kad.findNode(tId))
             break;
         sock = startPunch(epollFd, node.ip(), parPort(node.port_nat()));
