@@ -3,14 +3,16 @@ import QtQuick.Window 2.2
 import QtQuick.Controls 2.4
 
 
-Window {
+Window
+{
     visible: true
     width: 640
     height: 480
     title: qsTr("ebc")
     color: "#C0C0C0"
 
-    Connections {
+    Connections
+    {
         id: conn_id
         target: log
         onNewLog:
@@ -36,20 +38,19 @@ Window {
     {
         id: rectangle
         anchors.horizontalCenter: parent.horizontalCenter
-        width:  parent.width*2/3
+        width:  parent.width
         height: parent.height*4/5
         color: "#C7EDCC"
         clip: true
 
         ScrollView
         {
-           contentWidth: parent.width
+            contentWidth: parent.width
             id: view
             anchors.fill: parent
 
-
-
-            Text {
+            Text
+            {
                 id: output_text
                 width:  parent.width
                 height: parent.height
@@ -59,16 +60,30 @@ Window {
                 font.pixelSize: 13
                 lineHeight:1.2
                 wrapMode: Text.Wrap
-
             }
-
         }
     }
+    TextField
+    {
+        id: node_id
+        width: 166
+
+        inputMask: "xxxx xxxx xxxx xxxx xxxx"
+
+        text:"0000 0000 0000 0000 0000"
+
+        anchors.horizontalCenter: rectangle.horizontalCenter
+
+        anchors.top: rectangle.bottom
+        anchors.bottom: start_btn.top
+
+}
+
     Button
     {
         id: start_btn
         anchors.bottom: parent.bottom;
-        anchors.horizontalCenter: parent.horizontalCenter;
+        anchors.left:  parent.horizontalCenter;
         text: "start"
         onClicked:
         {
@@ -76,5 +91,19 @@ Window {
             log.start()
         }
     }
+
+    Button
+    {
+        id: search_btn
+        anchors.bottom: parent.bottom
+        anchors.right: start_btn.left
+        text: "search"
+        onClicked:
+        {
+            console.log("searching   "+node_id.text)
+            log.search(node_id.text)
+        }
+    }
+
 }
 

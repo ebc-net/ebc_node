@@ -13,8 +13,9 @@ class logSignal :public QObject
 public:
     logSignal():kad(nullptr){}
     Q_INVOKABLE void start();
-    void passKad(NET::Bucket* B){ kad = B;}
+    Q_INVOKABLE void searchId(std::string &);
 
+    void passKad(NET::Bucket* B){ kad = B;}
 signals:
     void newLog( QString str,int level);
 

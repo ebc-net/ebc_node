@@ -132,18 +132,21 @@ int main(int argc, char *argv[])
     ebcCryptoLib cl;
     cl.randomNbytes(id.data(), ID_LENGTH);
     id.printNodeId();
-    NET::NetEngine net(id);
+    NET::Bucket kad(id);
+    NET::NetEngine net(id,kad);
+    //服务器或是客户机的K桶
 
 #if 1
 #ifndef ON_QT
 	if(argc >= 2 && !strcmp(argv[1], "-d"))	
 	{
-		printNode = [&net](int type)
+        printNode = [&kad](int type)
 		{
 			if(type == 0)
-				net.printNodesInfo();
-			else if(type == 1)
-				net.printNodesInfo(1);
+                kad.dump();
+//				net.printNodesInfo();
+//			else if(type == 1)
+//				net.printNodesInfo(1);
 
 		};
 		daemonize();
@@ -154,7 +157,7 @@ int main(int argc, char *argv[])
 	else
 	{
 		net.startClient();
-		std::thread cmd= std::thread([&net]()
+        std::thread cmd= std::thread([&kad]()
 					{
 					//接收用户输入命令线程
 					QLOG_INFO()<<"Usege: ";
@@ -167,10 +170,10 @@ int main(int argc, char *argv[])
 					switch(c)
 					{
 					case '0':
-					net.printNodesInfo();
+                    kad.dump();
 					break;
 					case '1':
-					net.printNodesInfo(1);
+                    kad.dump();;
 					break;
 					case '\n':
 					break;
