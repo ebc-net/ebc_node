@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
     cl.randomNbytes(id.data(), ID_LENGTH);
     id.printNodeId();
     NET::Bucket kad(id);
-    NET::NetEngine net(id,kad);
+    NET::NetEngine net(id,&kad);
     //服务器或是客户机的K桶
 
 #if 1
@@ -189,6 +189,7 @@ int main(int argc, char *argv[])
 	}
 	return 0;
 #else
+    lg.passKad(&kad);
     net.startClient();
     return app.exec();
 #endif

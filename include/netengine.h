@@ -17,7 +17,7 @@ public:
 
 
 
-    NetEngine(const NodeId _id, Bucket _kad,const bool _isServer = false);
+    NetEngine(const NodeId _id, Bucket *_kad,const bool _isServer = false);
     ~NetEngine();
 
     void startServer();
@@ -35,7 +35,7 @@ private:
     void setNodeExpired(const UDTSOCKET& sock);
 
     Node self;   //本节点的信息
-    Bucket kad;//服务器或是客户机的K桶
+    Bucket *kad;//服务器或是客户机的K桶
     UDTSOCKET boot_sock;  //本节点与服务器通信的SOCKET
     std::thread boot_thread; //启动线程，负责与服务器节点交互以及维护对端节点的连接
     bool boot_thread_flag;

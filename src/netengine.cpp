@@ -5,20 +5,16 @@
 #include "QsLog.h"
 #include <chrono>//C++ time
 #ifdef ON_QT
-#include "logsignal.h"
 #include <QtGlobal>
-extern logSignal lg;
 #endif
 namespace NET
 {
-NetEngine::NetEngine(const NodeId _id, Bucket _kad,const bool _isServer):self(_id), kad(_kad),isServer(_isServer)
+NetEngine::NetEngine(const NodeId _id, Bucket *_kad,const bool _isServer):self(_id), kad(_kad),isServer(_isServer)
 {
    local_addr.sin_addr.s_addr = INADDR_ANY;
    local_addr.sin_port = 0;
    local_addr.sin_family = AF_INET;
-#ifdef ON_QT
-   lg.passKad(&kad);
-#endif
+
 }
 
 NetEngine::~NetEngine()
@@ -28,7 +24,7 @@ NetEngine::~NetEngine()
     server_thread_flag = false;
     UDT::close(boot_sock);
 
-    kad.closeBucket([](int sock)
+    kad->closeBucket([](int sock)
     {
         UDT::close(sock);
     });
@@ -371,7 +367,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
             if(clock::now() >= maintenanceTime)
             {
 
-                if( kad.bucketMaintenance( sendFindNode,false ))
+                if( kad->bucketMaintenance( sendFindNode,false ))
                 {
                     maintenanceTime = clock::now()+ seconds(5);
                     QLOG_INFO()<<"send get_node for bucket maintenance";
@@ -380,9 +376,9 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
                 {
                     maintenanceTime = clock::now()+ seconds(60);
 
-                    if(kad.grow_time >= clock::now() - seconds(60))//mybucket分裂后60s再扩桶
+                    if(kad->grow_time >= clock::now() - seconds(60))//mybucket分裂后60s再扩桶
                     {
-                        kad.bucketMaintenance(sendFindNode,true);
+                        kad->bucketMaintenance(sendFindNode,true);
                     }
                 }
             }
@@ -516,7 +512,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
             //开始查找节点并发送打洞信息
             //std::list<Sp<Node>> repNodes(const NodeId &id);
             NodeId cli_id(msg.src_id());
-            std::list<Sp<Node>> sendnodes = kad.repNodes(cli_id);
+            std::list<Sp<Node>> sendnodes = kad->repNodes(cli_id);
             for (auto &node:sendnodes)
             {
                 auto tmp = nodes.add_ebcnodes();
@@ -554,7 +550,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
             //开始查找节点并发送打洞信息
             NodeId peer_id(msg.src_id());
             //此处需要修改，查找当间cli_id所在桶的所有节点
-            auto targetnodes = kad.findClosestNodes(peer_id,8);
+            auto targetnodes = kad->findClosestNodes(peer_id,8);
             for (auto &node:targetnodes)
             {
                 auto tmp = nodes.add_ebcnodes();
@@ -589,7 +585,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                 //开始UDT的打洞
                 UDTSOCKET sock = UDT::INVALID_SOCK;
                 NodeId tId{node.id()};
-                if(kad.findNode(tId))
+                if(kad->findNode(tId))
                     continue;
                 sock = startPunch(epollFd, node.ip(), parPort(node.port_nat()));
                 if(sock == UDT::INVALID_SOCK)
@@ -619,7 +615,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
         //开始UDT的打洞
         UDTSOCKET sock = UDT::INVALID_SOCK;
         NodeId tId{node.id()};
-        if(kad.findNode(tId))
+        if(kad->findNode(tId))
             break;
         sock = startPunch(epollFd, node.ip(), parPort(node.port_nat()));
         if(sock == UDT::INVALID_SOCK)
@@ -682,7 +678,7 @@ int NetEngine::startPunch(int& epollFd, uint32_t ip, uint16_t port)//对端的IP
 //加服务器K桶
 void NetEngine::addtobkt(const Sp<Node> &node)
 {
-    kad.onNewNode(node,2,isServer);
+    kad->onNewNode(node,2,isServer);
 }
 
 void NetEngine::setNodeExpired(const UDTSOCKET &sock)
