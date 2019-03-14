@@ -8,7 +8,7 @@ namespace NET
 
 NodeId::NodeId(const std::string &str)
 {
-    memcmp(data(), str.data(),ID_LENGTH);
+    memcpy(data(), str.data(),ID_LENGTH);
 }
 
 std::string NodeId::toString()const
@@ -73,7 +73,7 @@ unsigned int NodeId::commBit( const NodeId& _id)const
     return 8 * i + j;
 }
 
-void NodeId::printNodeId()const
+void NodeId::printNodeId(bool isExpire)const
 {
     char tmp_id[2];
     std::string l_id;
@@ -82,7 +82,10 @@ void NodeId::printNodeId()const
         sprintf(tmp_id,"%02x", i);
         l_id += tmp_id;
     }
-    QLOG_INFO()<<l_id.c_str();
+    if(isExpire)
+        QLOG_ERROR()<<l_id.c_str();
+    else
+        QLOG_INFO()<<l_id.c_str();
 }
 
 bool NodeId::operator<(const NodeId &_id)

@@ -4,7 +4,9 @@
 #include <cstring>
 #include "QsLog.h"
 #ifdef ON_QT
+#include "logsignal.h"
 #include <QtGlobal>
+extern logSignal lg;
 #endif
 #include <chrono>//C++ time
 namespace NET
@@ -15,7 +17,7 @@ NetEngine::NetEngine(const NodeId _id, const bool _isServer):self(_id), isServer
    local_addr.sin_port = 0;
    local_addr.sin_family = AF_INET;
 
-
+   lg.passKad(&kad);
 }
 
 NetEngine::~NetEngine()
@@ -241,8 +243,10 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
                 else
                 {
                     QLOG_ERROR()<<"peer connect error1";
+                    sockNodePair[sock]->getId().printNodeId();
                     UDT::close(sock);
                     setNodeExpired(sock);
+                    sockNodePair.erase(sock);
 
                 }
             }
@@ -272,6 +276,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
                     {
                       QLOG_ERROR()<<"peer connect error";
                         UDT::close(sock);
+
                     }
                     continue;
                 }

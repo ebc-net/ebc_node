@@ -142,6 +142,16 @@ bool Bucket::onNewNode(const Sp<Node>& node, int confirm, bool isServer)
     }
     if (b->nodes.size() >= MAX_NODE)
     {
+        /* Try to get rid of an expired node. */
+        for (auto& n : b->nodes)
+        {
+            if (n->isExpired())
+            {
+                n = node;
+                return true;
+            }
+        }
+
         int dNum = isServer?11:6;
         if (mybucket || depth(b) < dNum) {
             split(b);
@@ -340,7 +350,7 @@ void Bucket::dump() const
         b.first.printNodeId();
 		for(auto& n: b.nodes)
 		{
-            n->getId().printNodeId();
+            n->getId().printNodeId(n->isExpired());
 		}
 	}
 	QLOG_WARN()<<"k-bucket num = "<<buckets.size();

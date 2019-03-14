@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
     cl.randomNbytes(id.data(), ID_LENGTH);
     id.printNodeId();
     NET::NetEngine net(id);
-    Bucket kad(id);
+
 #if 1
 #ifndef ON_QT
 	if(argc >= 2 && !strcmp(argv[1], "-d"))	

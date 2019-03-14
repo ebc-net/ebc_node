@@ -8,12 +8,12 @@ class NodeId : public std::array<uint8_t, ID_LENGTH>
 {
 public:
     NodeId(const std::string&);
-    NodeId(){}
+    NodeId(){this->fill(0);}
     std::string toString()const;
     int lowBit()const;
     int xorCmp( const NodeId& _id1, const NodeId& _id2)const;
     unsigned int commBit(const NodeId&)const;
-    void printNodeId()const;
+    void printNodeId(bool isExpire = false)const;
     bool operator <  (const NodeId & _id);
     bool operator == (const NodeId & _id);
 

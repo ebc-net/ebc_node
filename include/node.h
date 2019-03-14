@@ -33,8 +33,8 @@ public:
 
 
     /*******************************function*****************/
-    Node():id(), state(DISCONNECTED), nat(SYMMTRIC), ping_count(0) {}
-    Node(const NodeId & _id, const SockAddr _addr=nullptr, const NatType _nat=SYMMTRIC, const NodeState  _state=DISCONNECTED);
+    Node():id(), state(CONNECTED), nat(SYMMTRIC), ping_count(0) {}
+    Node(const NodeId & _id, const SockAddr _addr=nullptr, const NatType _nat=SYMMTRIC, const NodeState  _state=CONNECTED);
 
     const NodeId& getId();
 

@@ -1,16 +1,14 @@
 #ifdef ON_QT
 #include "logsignal.h"
 #include "QsLog.h"
-#include"node.h"
+#include"bucket.h"
 
-logSignal::logSignal()
-{
 
-}
 
 
 void logSignal::start()
 {
+    kad->dump();
 }
 
 #endif
