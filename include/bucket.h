@@ -50,8 +50,8 @@ public:
     bool bucketMaintenance(std::function<void(Sp<Node> &dstId, NodeId targetId)>,bool neighbour = true);//
     bool split(const Kbucket::iterator &b);
     void closeBucket(destoryNet d);
-
     void dump() const;
+
 private:    
     Kbucket buckets;
     NodeId selfId;

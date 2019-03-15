@@ -15,11 +15,8 @@ class NetEngine
 {
 public:
 
-
-
     NetEngine(const NodeId _id, Bucket *_kad,const bool _isServer = false);
     ~NetEngine();
-
     void startServer();
     void startClient(const std::string ip=SUPER_NODE, const uint16_t port=SRV_PORT);
 

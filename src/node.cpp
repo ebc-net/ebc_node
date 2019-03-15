@@ -61,7 +61,7 @@ void Node::setSock(const UDTSOCKET &_sock)
 
 const UDTSOCKET &Node::getSock()
 {
-   return sock;
+    return sock;
 }
 
 
@@ -82,15 +82,15 @@ bool Node::operator==(const Node &o)
 
 Node &Node::operator=(const Node &o)
 {
-   id = o.id;
-   addr = o.addr;
-   state = o.state;
-   nat = o.nat;
-   last_tm = o.last_tm;
-   ping_count = o.ping_count;
-   sock = o.sock;
+    id = o.id;
+    addr = o.addr;
+    state = o.state;
+    nat = o.nat;
+    last_tm = o.last_tm;
+    ping_count = o.ping_count;
+    sock = o.sock;
 
-   return *this;
+    return *this;
 }
 
 void Node::printNodeState(const Node::NodeState _state)

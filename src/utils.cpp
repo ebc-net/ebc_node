@@ -25,7 +25,7 @@ SockAddr::resolve(const std::string& host, const std::string& service)
     addrinfo* info = nullptr;
     int rc = getaddrinfo(host.c_str(), service.empty() ? nullptr : service.c_str(), &hints, &info);
     if(rc != 0)
-       QLOG_ERROR()<<"resolve host error: ";
+        QLOG_ERROR()<<"resolve host error: ";
 
     addrinfo* infop = info;
     while (infop) {

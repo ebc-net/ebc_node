@@ -109,63 +109,63 @@ int msgPack::unpack(const void *buf, int len)
 
 void msgPack::msgPrint()
 {
-   QLOG_INFO()<<"version:"<<ebcMsg.version().c_str();
-   QLOG_INFO()<<"src_id:";
-   NodeId(ebcMsg.src_id()).printNodeId();
+    QLOG_INFO()<<"version:"<<ebcMsg.version().c_str();
+    QLOG_INFO()<<"src_id:";
+    NodeId(ebcMsg.src_id()).printNodeId();
 
-   switch (ebcMsg.type()) {
-   case config::MsgType::GET_DATA:
-           QLOG_INFO()<<"type :"<<"GET_DATA";
-       break;
-   case config::MsgType::GET_NODE:
-           QLOG_INFO()<<"type :"<<"GET_NODE";
-       break;
-   case config::MsgType::REP:
-           QLOG_INFO()<<"type :"<<"REP";
-       break;
-   case config::MsgType::PUNCH:
-           QLOG_INFO()<<"type :"<<"PUNCH";
-       break;
-   case config::MsgType::EMPTY:
-           QLOG_INFO()<<"type :"<<"EMPTY";
-       break;
-   default:
-       break;
-   }
+    switch (ebcMsg.type()) {
+    case config::MsgType::GET_DATA:
+        QLOG_INFO()<<"type :"<<"GET_DATA";
+        break;
+    case config::MsgType::GET_NODE:
+        QLOG_INFO()<<"type :"<<"GET_NODE";
+        break;
+    case config::MsgType::REP:
+        QLOG_INFO()<<"type :"<<"REP";
+        break;
+    case config::MsgType::PUNCH:
+        QLOG_INFO()<<"type :"<<"PUNCH";
+        break;
+    case config::MsgType::EMPTY:
+        QLOG_INFO()<<"type :"<<"EMPTY";
+        break;
+    default:
+        break;
+    }
 
-   switch (ebcMsg.sub_type()) {
-   case config::MsgSubType::DATA :
-       QLOG_INFO()<<"sub_type :"<<"DATA";
-       break;
-   case config::MsgSubType::NODE :
-       QLOG_INFO()<<"sub_type :"<<"NODE";
-       break;
-   case config::MsgSubType::EMPTY_SUB :
-       QLOG_INFO()<<"sub_type :"<<"EMPTY";
-       break;
-   default:
-       break;
+    switch (ebcMsg.sub_type()) {
+    case config::MsgSubType::DATA :
+        QLOG_INFO()<<"sub_type :"<<"DATA";
+        break;
+    case config::MsgSubType::NODE :
+        QLOG_INFO()<<"sub_type :"<<"NODE";
+        break;
+    case config::MsgSubType::EMPTY_SUB :
+        QLOG_INFO()<<"sub_type :"<<"EMPTY";
+        break;
+    default:
+        break;
 
-   }
+    }
 
-   QLOG_INFO()<<"length: "<<ebcMsg.length();
+    QLOG_INFO()<<"length: "<<ebcMsg.length();
 
-   if(ebcMsg.has_nodes())
-   {
-       config::EbcNodes nodes = ebcMsg.nodes();
-       int node_count = nodes.ebcnodes_size();
-       for(int i=0; i<node_count; ++i)
-       {
-           QLOG_INFO()<<"node id ";
-           NodeId(nodes.ebcnodes(i).id()).printNodeId();
-           QLOG_INFO()<<"node ip "<<nodes.ebcnodes(i).ip();//注意，无法打印
-           QLOG_INFO()<<"node port "<<nodes.ebcnodes(i).port_nat();
-       }
-   }
-   else if(!ebcMsg.msg().empty())
-   {
-       QLOG_INFO()<<"msg body: "<<ebcMsg.msg().c_str();
-   }
+    if(ebcMsg.has_nodes())
+    {
+        config::EbcNodes nodes = ebcMsg.nodes();
+        int node_count = nodes.ebcnodes_size();
+        for(int i=0; i<node_count; ++i)
+        {
+            QLOG_INFO()<<"node id ";
+            NodeId(nodes.ebcnodes(i).id()).printNodeId();
+            QLOG_INFO()<<"node ip "<<nodes.ebcnodes(i).ip();//注意，无法打印
+            QLOG_INFO()<<"node port "<<nodes.ebcnodes(i).port_nat();
+        }
+    }
+    else if(!ebcMsg.msg().empty())
+    {
+        QLOG_INFO()<<"msg body: "<<ebcMsg.msg().c_str();
+    }
 }
 
 }

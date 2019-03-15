@@ -87,7 +87,7 @@ Bucket::Kbucket::iterator Bucket::findBucket(const NodeId &id)
             return  it;
         if(id < std::next(it)->first)
             return it;
-		it = std::next(it);
+        it = std::next(it);
     }
 }
 
@@ -110,11 +110,11 @@ NodeId Bucket::randomId(const Kbucket::const_iterator &b)
 
 unsigned Bucket::depth(const Kbucket::const_iterator& it) const
 {
-	if (it == buckets.end())
-	  return 0;
+    if (it == buckets.end())
+        return 0;
     int bit1 = it->first.lowBit();
     int bit2 = std::next(it) != buckets.end() ? std::next(it)->first.lowBit() : -1;
-	return std::max(bit1, bit2)+1;
+    return std::max(bit1, bit2)+1;
 }
 
 //判断是否在bucket中
@@ -214,8 +214,8 @@ bool Bucket::bucketMaintenance(std::function<void(Sp<Node> &dstNode, NodeId targ
         if(neighbour && goodNode >0)
         {
 
-                    sendFindNode(dstNode, selfId);
-                       return true;
+            sendFindNode(dstNode, selfId);
+            return true;
         }
 
         //在最邻近的桶找一个活节点，给他发送findClosestNode（一个需要维护桶范围内的随机ID），以下代码实现的就是这个功能
@@ -267,7 +267,6 @@ bool Bucket::bucketMaintenance(std::function<void(Sp<Node> &dstNode, NodeId targ
         if(!neighbour)
             q = std::next(q);
     }
-
     return false;
 }
 
@@ -291,7 +290,6 @@ std::list<Sp<Node> > Bucket::repNodes(const NodeId &id)//服务器REP节点的96
         nodes.splice(nodes.end(),tmp);
         id_first[i] &= (0xfe <<(7 - j));
     }
-
     return nodes;
 }
 
@@ -305,7 +303,7 @@ bool Bucket::split(const Kbucket::iterator &b)
         return false;
     }
 
-	QLOG_WARN()<<"new bucket : ";
+    QLOG_WARN()<<"new bucket : ";
     new_first_id.printNodeId();
     // Insert new bucket
     buckets.insert(std::next(b), bucket {b->af, new_first_id,});//从next(b)之前开始插入，
@@ -344,16 +342,16 @@ bool Bucket::isEmpty() const
 
 void Bucket::dump() const
 {
-	for(auto& b: buckets)
-	{
-		QLOG_WARN()<<"bucket size= "<<b.nodes.size();
+    for(auto& b: buckets)
+    {
+        QLOG_WARN()<<"bucket size= "<<b.nodes.size();
         b.first.printNodeId();
-		for(auto& n: b.nodes)
-		{
+        for(auto& n: b.nodes)
+        {
             n->getId().printNodeId(n->isExpired());
-		}
-	}
-	QLOG_WARN()<<"k-bucket num = "<<buckets.size();
+        }
+    }
+    QLOG_WARN()<<"k-bucket num = "<<buckets.size();
 }
 
 }

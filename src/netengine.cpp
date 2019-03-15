@@ -90,7 +90,6 @@ void NetEngine::startServer()
                       }
                       else if(ret == 0)
                       continue;
-
                       for(auto& sock:errfds)
                       {
                           //客户端发消息过来
@@ -137,15 +136,10 @@ void NetEngine::startServer()
                                   setNodeExpired(sock);
                                   continue;
                               }
-
                               //接收并解析消息
                               handleMsg(sock) ;
-
                           }
                       }
-
-
-
                   }
               }
               );
@@ -182,7 +176,6 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
         return ;
     }
     QLOG_INFO()<<"local port = "<<ntohs(local_addr.sin_port);
-
 
     boot_thread_flag = true;
     boot_thread = std::thread([&, srv_addr]()  //lambda 表达式
@@ -388,25 +381,6 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
 
 }
 
-//void NetEngine::printNodesInfo(int type)
-//{
-
-//    //void passKad(NET::Bucket* B){ kad = B;}
-//    for(auto& b: kad.buckets)
-//        {
-//            QLOG_WARN()<<"bucket size= "<<b.nodes.size();
-//            b.first.printNodeId();
-//            for(auto& n: b.nodes)
-//            {
-//                n->getId().printNodeId(n->isExpired());
-//            }
-//        }
-//        QLOG_WARN()<<"k-bucket num = "<<buckets.size();
-//}
-
-
-
-
 void NetEngine::setUdtOpt(const UDTSOCKET &sock)//srv
 {
     bool opt = false;
@@ -560,7 +534,6 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                 UDT::sendmsg(node->getSock(),buf,ret);
 
             }
-
             //这里感觉也需要把对方加入自己的桶内？
         }
 
@@ -569,7 +542,6 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
         if(ret < 0)
             return ;
         UDT::sendmsg(sock, buf, ret);
-
         break;
     }
     case config::MsgType::REP ://此处需要把接收的服务器发来的节点进行打洞  此处不需要改动
@@ -590,15 +562,14 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                     auto here = std::find_if(sockNodePair.begin(), sockNodePair.end(),
                                              [&tId](std::map<UDTSOCKET, Sp<Node>>::value_type &socknodes)
                     {
-                        return socknodes.second->getId()== tId;
-                    });
+                            return socknodes.second->getId()== tId;
+                });
                     if(here != sockNodePair.end())
                         continue;
                 }
                 sock = startPunch(epollFd, node.ip(), parPort(node.port_nat()));
                 if(sock == UDT::INVALID_SOCK)
                     continue;
-
                 Sp<Node> lNode = std::make_shared<Node>(tId);
                 lNode->setSock(sock);
                 struct sockaddr_in peer_addr;
@@ -628,8 +599,8 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
             auto here = std::find_if(sockNodePair.begin(), sockNodePair.end(),
                                      [&tId](std::map<UDTSOCKET, Sp<Node>>::value_type &socknodes)
             {
-                return socknodes.second->getId()== tId;
-            });
+                    return socknodes.second->getId()== tId;
+        });
             if(here != sockNodePair.end())
                 break;
         }
