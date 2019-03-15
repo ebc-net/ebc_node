@@ -11,9 +11,9 @@ namespace NET
 {
 NetEngine::NetEngine(const NodeId _id, Bucket *_kad,const bool _isServer):self(_id), kad(_kad),isServer(_isServer)
 {
-   local_addr.sin_addr.s_addr = INADDR_ANY;
-   local_addr.sin_port = 0;
-   local_addr.sin_family = AF_INET;
+    local_addr.sin_addr.s_addr = INADDR_ANY;
+    local_addr.sin_port = 0;
+    local_addr.sin_family = AF_INET;
 
 }
 
@@ -34,122 +34,122 @@ void NetEngine::startServer()
 {
 
     if(self.getId().empty())
-   {
-       QLOG_ERROR()<<"Server net start fail: Id is empty";
-       return ;
-   }
+    {
+        QLOG_ERROR()<<"Server net start fail: Id is empty";
+        return ;
+    }
 
-   isServer = true;
-   server_thread_flag = true;
-   server = std::thread
-   ( [&]()
-   //服务器线程(后期可能改为单独进程),当节点有成为服务器节点的可能时，启动此线程
-   {
+    isServer = true;
+    server_thread_flag = true;
+    server = std::thread
+            ( [&]()
+              //服务器线程(后期可能改为单独进程),当节点有成为服务器节点的可能时，启动此线程
+    {
 
-//UDTSOCKET srv = UDT::socket(AF_INET, SOCK_STREAM, 0);
+                  //UDTSOCKET srv = UDT::socket(AF_INET, SOCK_STREAM, 0);
 
-       UDTSOCKET srv = UDT::socket(AF_INET, SOCK_DGRAM, 0);
-       UDTSOCKET cli;
+                  UDTSOCKET srv = UDT::socket(AF_INET, SOCK_DGRAM, 0);
+                  UDTSOCKET cli;
 
-       int epollFd = UDT::epoll_create();
-       int event = 0 ;
-       int ret = 0;
-       std::set<UDTSOCKET> readfds;
-       std::set<UDTSOCKET> errfds;
-       event = UDT_EPOLL_IN|UDT_EPOLL_ERR;//可读|错误
+                  int epollFd = UDT::epoll_create();
+                  int event = 0 ;
+                  int ret = 0;
+                  std::set<UDTSOCKET> readfds;
+                  std::set<UDTSOCKET> errfds;
+                  event = UDT_EPOLL_IN|UDT_EPOLL_ERR;//可读|错误
 
-       int sock_len = sizeof(struct sockaddr);
-       struct sockaddr_in srv_addr, client;
-       srv_addr.sin_addr.s_addr = INADDR_ANY;
-       srv_addr.sin_port = htons(SRV_PORT);
-       srv_addr.sin_family = AF_INET;
+                  int sock_len = sizeof(struct sockaddr);
+                  struct sockaddr_in srv_addr, client;
+                  srv_addr.sin_addr.s_addr = INADDR_ANY;
+                  srv_addr.sin_port = htons(SRV_PORT);
+                  srv_addr.sin_family = AF_INET;
 
-       setUdtOpt(srv);
-       if(UDT::bind(srv, (struct sockaddr*)&srv_addr, sizeof(srv_addr)) < 0)
-       {
-            QLOG_ERROR()<<"UDT bind server error"<<UDT::getlasterror().getErrorMessage();
-            return ;
-       }
+                  setUdtOpt(srv);
+                  if(UDT::bind(srv, (struct sockaddr*)&srv_addr, sizeof(srv_addr)) < 0)
+                  {
+                      QLOG_ERROR()<<"UDT bind server error"<<UDT::getlasterror().getErrorMessage();
+                      return ;
+                  }
 
-       if(UDT::listen(srv, 10000) < 0)//等待连接队列的最大长度。
-       {
-            QLOG_ERROR()<<"UDT listen server error"<<UDT::getlasterror().getErrorMessage();
-            return ;
-       }
-       UDT::epoll_add_usock(epollFd, srv, &event);//添加一个UDT套接字到epoll,event初始化为0
-       while(server_thread_flag)//初始化时已为true//循环
-       {
-           //这个wait只会监听srv这个socket以及由socket返回的客户端的socket;
-           //int epoll_wait(int epfd, struct epoll_event *event, int maxevents, int timeout);
-           ret = UDT::epoll_wait(epollFd, &readfds, nullptr, &errfds, 5*1000);//阻塞，处理发生的所有事件，存入readfds中
-           //ret = UDT::epoll_wait(epollFd, &readfds, nullptr, 5*1000);
-             if(ret < 0)//返回值－1出错，0超时，正常返回值是fd就绪的个数
-             {
-                 QLOG_ERROR()<<"UDT epoll_wait error"<<UDT::getlasterror().getErrorMessage();
-                 return ;
-             }
+                  if(UDT::listen(srv, 10000) < 0)//等待连接队列的最大长度。
+                  {
+                      QLOG_ERROR()<<"UDT listen server error"<<UDT::getlasterror().getErrorMessage();
+                      return ;
+                  }
+                  UDT::epoll_add_usock(epollFd, srv, &event);//添加一个UDT套接字到epoll,event初始化为0
+                  while(server_thread_flag)//初始化时已为true//循环
+                  {
+                      //这个wait只会监听srv这个socket以及由socket返回的客户端的socket;
+                      //int epoll_wait(int epfd, struct epoll_event *event, int maxevents, int timeout);
+                      ret = UDT::epoll_wait(epollFd, &readfds, nullptr, &errfds, 5*1000);//阻塞，处理发生的所有事件，存入readfds中
+                      //ret = UDT::epoll_wait(epollFd, &readfds, nullptr, 5*1000);
+                      if(ret < 0)//返回值－1出错，0超时，正常返回值是fd就绪的个数
+                      {
+                          QLOG_ERROR()<<"UDT epoll_wait error"<<UDT::getlasterror().getErrorMessage();
+                          return ;
+                      }
                       else if(ret == 0)
-             continue;
+                      continue;
 
-             for(auto& sock:errfds)
-             {
-                 //客户端发消息过来
-                 int state=0;
-                 int len = sizeof(state);
-                 UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);//用于获取任意类型、任意状态套接口的选项当前值，并把结果存入optval
-                 //对服务器来说没有CONNECTING状态，因为它不会去主动连接
-                 if(CLOSED == state || BROKEN == state )
-                 {
-                     QLOG_INFO()<<"client disconnected";
-                     UDT::epoll_remove_usock(epollFd, sock);
-                     UDT::close(sock);
-                     //NetEngine::delClientNode(sock);
-                     continue;
-                 }
-             }
-             for(auto& sock:readfds)//可读，有消息发来
-             {
-                 if(sock == srv) //客户端连接成功
-                 {
-                     if((cli = UDT::accept(srv, (struct sockaddr*)&client, &sock_len)) < 0)
-                     {
-                         QLOG_ERROR()<<"UDT accept error"<<UDT::getlasterror().getErrorMessage();
-                         continue;
-                     }
+                      for(auto& sock:errfds)
+                      {
+                          //客户端发消息过来
+                          int state=0;
+                          int len = sizeof(state);
+                          UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);//用于获取任意类型、任意状态套接口的选项当前值，并把结果存入optval
+                          //对服务器来说没有CONNECTING状态，因为它不会去主动连接
+                          if(CLOSED == state || BROKEN == state )
+                          {
+                              QLOG_INFO()<<"client disconnected";
+                              UDT::epoll_remove_usock(epollFd, sock);
+                              UDT::close(sock);
+                              //NetEngine::delClientNode(sock);
+                              continue;
+                          }
+                      }
+                      for(auto& sock:readfds)//可读，有消息发来
+                      {
+                          if(sock == srv) //客户端连接成功
+                          {
+                              if((cli = UDT::accept(srv, (struct sockaddr*)&client, &sock_len)) < 0)
+                              {
+                                  QLOG_ERROR()<<"UDT accept error"<<UDT::getlasterror().getErrorMessage();
+                                  continue;
+                              }
 
-                     QLOG_INFO()<<"peer info:"<<inet_ntoa(client.sin_addr)<<"@"<<ntohs(client.sin_port);
-                     QLOG_INFO()<<"cli = "<<cli;
-                     //这里要不要设置cli这个socket的属性，还是说cli会继承srv套接字的属性
-                     UDT::epoll_add_usock(epollFd, cli, &event);
-                 }
-                 else
-                 {
-                     //客户端发消息过来
-                     int state=0;
-                     int len = sizeof(state);
-                     UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);
-                     //对服务器来说没有CONNECTING状态，因为它不会去主动连接
-                     if(CLOSED == state || BROKEN == state )
-                     {
-                         QLOG_INFO()<<"client disconnected";
-                         UDT::epoll_remove_usock(epollFd, sock);
-                         UDT::close(sock);
-                         setNodeExpired(sock);
-                         continue;
-                     }
+                              QLOG_INFO()<<"peer info:"<<inet_ntoa(client.sin_addr)<<"@"<<ntohs(client.sin_port);
+                              QLOG_INFO()<<"cli = "<<cli;
+                              //这里要不要设置cli这个socket的属性，还是说cli会继承srv套接字的属性
+                              UDT::epoll_add_usock(epollFd, cli, &event);
+                          }
+                          else
+                          {
+                              //客户端发消息过来
+                              int state=0;
+                              int len = sizeof(state);
+                              UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);
+                              //对服务器来说没有CONNECTING状态，因为它不会去主动连接
+                              if(CLOSED == state || BROKEN == state )
+                              {
+                                  QLOG_INFO()<<"client disconnected";
+                                  UDT::epoll_remove_usock(epollFd, sock);
+                                  UDT::close(sock);
+                                  setNodeExpired(sock);
+                                  continue;
+                              }
 
-                     //接收并解析消息
-                     handleMsg(sock) ;
+                              //接收并解析消息
+                              handleMsg(sock) ;
 
-                 }
-             }
+                          }
+                      }
 
 
 
-         }
-       }
-    );
-   server.detach();
+                  }
+              }
+              );
+    server.detach();
 }
 
 void NetEngine::startClient(const std::string ip, const uint16_t port)//指定服务器的ip和端口号
@@ -171,8 +171,8 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
     setUdtOpt(boot_sock);
     if(UDT::bind(boot_sock, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0)
     {
-       QLOG_ERROR()<<"UDT bind error"<<UDT::getlasterror().getErrorMessage();
-       return ;
+        QLOG_ERROR()<<"UDT bind error"<<UDT::getlasterror().getErrorMessage();
+        return ;
     }
 
     int sock_len = sizeof(local_addr);
@@ -186,7 +186,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
 
     boot_thread_flag = true;
     boot_thread = std::thread([&, srv_addr]()  //lambda 表达式
-    //与服务器交互的线程
+                              //与服务器交互的线程
     {
         if(UDT::connect(boot_sock, (struct sockaddr *)&srv_addr, sizeof(srv_addr)) < 0)
         {
@@ -261,18 +261,18 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
                     if(sock == boot_sock)
                     {
                         //如果是服务器连接失败，则做重连动作
-                      QLOG_ERROR()<<"server connect error! re-connecting...";
-                      if(UDT::connect(boot_sock, (struct sockaddr *)&srv_addr, sizeof(srv_addr)) < 0)
-                      {
-                          QLOG_ERROR()<<"UDT boot socket connect error"<<UDT::getlasterror().getErrorMessage();
-                          return ;
-                      }
-                      event = UDT_EPOLL_OUT|UDT_EPOLL_ERR;
-                      UDT::epoll_add_usock(epollFd, sock, &event);
+                        QLOG_ERROR()<<"server connect error! re-connecting...";
+                        if(UDT::connect(boot_sock, (struct sockaddr *)&srv_addr, sizeof(srv_addr)) < 0)
+                        {
+                            QLOG_ERROR()<<"UDT boot socket connect error"<<UDT::getlasterror().getErrorMessage();
+                            return ;
+                        }
+                        event = UDT_EPOLL_OUT|UDT_EPOLL_ERR;
+                        UDT::epoll_add_usock(epollFd, sock, &event);
                     }
                     else
                     {
-                      QLOG_ERROR()<<"peer connect error";
+                        QLOG_ERROR()<<"peer connect error";
                         UDT::close(sock);
 
                     }
@@ -286,7 +286,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
 
                 if(sock == boot_sock) //服务器连接成功
                 {
-                   //发送GET_NODE命令到服务器
+                    //发送GET_NODE命令到服务器
                     config::EbcNode self_node;
                     self_node.set_port_nat(comPortNat(0, self.getNatType()));
                     msgPack sendMsg(self.getId());
@@ -328,23 +328,23 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
                     if(sock == boot_sock)
                     {
                         //如果是服务器连接失败，则做重连动作
-                      QLOG_ERROR()<<"server connect error! re-connecting...";
-                      if(UDT::connect(boot_sock, (struct sockaddr *)&srv_addr, sizeof(srv_addr)) < 0)//重连
-                      {
-                          QLOG_ERROR()<<"UDT boot socket connect error"<<UDT::getlasterror().getErrorMessage();
-                          return ;
-                      }
-                      event = UDT_EPOLL_OUT|UDT_EPOLL_ERR;
-                      UDT::epoll_add_usock(epollFd, sock, &event);
+                        QLOG_ERROR()<<"server connect error! re-connecting...";
+                        if(UDT::connect(boot_sock, (struct sockaddr *)&srv_addr, sizeof(srv_addr)) < 0)//重连
+                        {
+                            QLOG_ERROR()<<"UDT boot socket connect error"<<UDT::getlasterror().getErrorMessage();
+                            return ;
+                        }
+                        event = UDT_EPOLL_OUT|UDT_EPOLL_ERR;
+                        UDT::epoll_add_usock(epollFd, sock, &event);
                     }
                     else
                     {
-                      QLOG_ERROR()<<"client connect error";
+                        QLOG_ERROR()<<"client connect error";
 
                         UDT::close(sock);
-                      //失效
+                        //失效
                         setNodeExpired(sock);
-                      //sock nodepair删掉此节点
+                        //sock nodepair删掉此节点
                         sockNodePair.erase(sock);
                     }
                     continue;
@@ -548,9 +548,9 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                 break;
 
             //开始查找节点并发送打洞信息
-            NodeId peer_id(msg.src_id());
+            NodeId targetId(msg.nodes().ebcnodes(0).id());
             //此处需要修改，查找当间cli_id所在桶的所有节点
-            auto targetnodes = kad->findClosestNodes(peer_id,8);
+            auto targetnodes = kad->findClosestNodes(targetId,8);
             for (auto &node:targetnodes)
             {
                 auto tmp = nodes.add_ebcnodes();
@@ -586,7 +586,15 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                 UDTSOCKET sock = UDT::INVALID_SOCK;
                 NodeId tId{node.id()};
                 if(kad->findNode(tId))
-                    continue;
+                {
+                    auto here = std::find_if(sockNodePair.begin(), sockNodePair.end(),
+                                             [&tId](std::map<UDTSOCKET, Sp<Node>>::value_type &socknodes)
+                    {
+                        return socknodes.second->getId()== tId;
+                    });
+                    if(here != sockNodePair.end())
+                        continue;
+                }
                 sock = startPunch(epollFd, node.ip(), parPort(node.port_nat()));
                 if(sock == UDT::INVALID_SOCK)
                     continue;
@@ -616,7 +624,15 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
         UDTSOCKET sock = UDT::INVALID_SOCK;
         NodeId tId{node.id()};
         if(kad->findNode(tId))
-            break;
+        {
+            auto here = std::find_if(sockNodePair.begin(), sockNodePair.end(),
+                                     [&tId](std::map<UDTSOCKET, Sp<Node>>::value_type &socknodes)
+            {
+                return socknodes.second->getId()== tId;
+            });
+            if(here != sockNodePair.end())
+                break;
+        }
         sock = startPunch(epollFd, node.ip(), parPort(node.port_nat()));
         if(sock == UDT::INVALID_SOCK)
             break;
@@ -645,13 +661,13 @@ int NetEngine::startPunch(int& epollFd, uint32_t ip, uint16_t port)//对端的IP
     if(UDT::INVALID_SOCK == sock)
     {
         QLOG_ERROR()<<"create new UDT sock error: "<<UDT::getlasterror_desc();
-       return UDT::INVALID_SOCK;
+        return UDT::INVALID_SOCK;
     }
 
-   struct sockaddr_in peer_addr;
-   peer_addr.sin_addr.s_addr = ip;
-   peer_addr.sin_port = port;
-   peer_addr.sin_family = AF_INET;
+    struct sockaddr_in peer_addr;
+    peer_addr.sin_addr.s_addr = ip;
+    peer_addr.sin_port = port;
+    peer_addr.sin_family = AF_INET;
 
     bool rendezvous = true;
     UDT::setsockopt(sock, 0, UDT_RENDEZVOUS, &rendezvous, sizeof(bool));
@@ -659,9 +675,9 @@ int NetEngine::startPunch(int& epollFd, uint32_t ip, uint16_t port)//对端的IP
 
     if(UDT::bind(sock, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0)
     {
-       QLOG_ERROR()<<"UDT punch bind error"<<UDT::getlasterror_desc()<<" code : "<<UDT::getlasterror_code();
-       UDT::close(sock);
-       return UDT::INVALID_SOCK;
+        QLOG_ERROR()<<"UDT punch bind error"<<UDT::getlasterror_desc()<<" code : "<<UDT::getlasterror_code();
+        UDT::close(sock);
+        return UDT::INVALID_SOCK;
     }
 
     if(UDT::connect(sock, (struct sockaddr*)&peer_addr, sizeof(peer_addr)) < 0)
