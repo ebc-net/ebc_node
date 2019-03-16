@@ -180,6 +180,18 @@ bool Bucket::findNode(const NodeId &id)
     return false;
 }
 
+Sp<Node> Bucket::getNode(const NodeId &id)
+{
+    auto it = findBucket(id);
+    for (auto & n : it->nodes)
+    {
+        if(id == n->getId())
+            return n;
+    }
+}
+
+
+
 bool Bucket::bucketMaintenance(std::function<void(Sp<Node> &dstNode, NodeId targetId)> sendFindNode, bool neighbour)
 {
     int goodNode = 0;

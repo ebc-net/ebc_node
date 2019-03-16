@@ -544,6 +544,47 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
         UDT::sendmsg(sock, buf, ret);
         break;
     }
+
+    //收到查询命令，找到该节点，或者返回3个最近的节点
+    case  config::MsgType::GET_DATA :
+    {
+        config::EbcNodes datanodes;//返回结果
+        struct sockaddr_in searcherInfo;//查询者的地址
+        int addr_len = sizeof(searcherInfo);
+        UDT::getpeername(sock,(struct sockaddr *)&searcherInfo, &addr_len);
+        memset(buf, 0, sizeof (buf));
+        //config::EbcNode searchernode;
+        NodeId searchId(msg.nodes().ebcnodes(0).id());
+        msgPack send_msg(self.getId());
+
+        if(ret < 0)
+            break;
+        if(kad->findNode(searchId))//找到data
+        {
+            auto node = kad->getNode(searchId);
+            auto tmp = datanodes.add_ebcnodes();
+            tmp->set_id(node->getId().data(),ID_LENGTH);
+            tmp->set_ip(node->getAddr().getIPv4().sin_addr.s_addr);
+            tmp->set_port_nat(comPortNat(node->getAddr().getIPv4().sin_port,node->getNatType()));
+        }
+        else
+        {
+            auto targetnodes = kad->findClosestNodes(searchId, 3);
+            for (auto &node:targetnodes)
+            {
+                auto tmp = datanodes.add_ebcnodes();
+                tmp->set_id(&node->getId(),ID_LENGTH);
+                tmp->set_ip(node->getAddr().getIPv4().sin_addr.s_addr);
+                tmp->set_port_nat(comPortNat(node->getAddr().getIPv4().sin_port,node->getNatType()));
+            }
+        }
+
+        ret = recv_msg.pack(config::MsgType::REP, &datanodes, buf, sizeof(buf), config::MsgSubType::DATA);
+        if(ret < 0)
+            return ;
+        UDT::sendmsg(sock,buf,ret);
+        break;
+    }
     case config::MsgType::REP ://此处需要把接收的服务器发来的节点进行打洞  此处不需要改动
     {
         if(config::MsgSubType::NODE == msg.sub_type())
