@@ -283,11 +283,14 @@ bool Bucket::bucketMaintenance(sendNode sendFindNode, bool neighbour)
 //服务器还给客户的ID表
 std::list<Sp<Node> > Bucket::repNodes(const NodeId &id)//服务器REP节点的96个节点
 {
-    std::list<Sp<Node>> nodes;
+    std::list<Sp<Node>> returNodes;
     auto it = findBucket(id);
     int bit = depth(it) - 1;
-    auto tmp = it->nodes;
-    nodes.splice(nodes.end(),tmp);
+    for (auto n:it->nodes)
+    {
+        if(!n->isExpired())
+            returNodes.push_back(n);
+    }
     NodeId id_first = it->first;
 
     for( ;bit >= 0; bit--)
@@ -296,11 +299,14 @@ std::list<Sp<Node> > Bucket::repNodes(const NodeId &id)//服务器REP节点的96
         int j = bit%8;
         id_first[i] ^= (0x80 >> j);//closest
         auto it = findBucket(id_first);
-        auto tmp = it->nodes;
-        nodes.splice(nodes.end(),tmp);
+        for (auto n:it->nodes)
+        {
+            if(!n->isExpired())
+                returNodes.push_back(n);
+        }
         id_first[i] &= (0xfe <<(7 - j));
     }
-    return nodes;
+    return returNodes;
 }
 
 bool Bucket::split(const Kbucket::iterator &b)
