@@ -68,6 +68,8 @@ void setupSignals()
 	signal(SIGHUP,signal_handler); /* catch hangup signal */
 	signal(SIGINT,signal_handler); /* catch interrupt signal */
 	signal(SIGTERM,signal_handler); /* catch kill signal */
+	signal(SIGUSR1,signal_handler); /* catch kill signal */
+	signal(SIGUSR2,signal_handler); /* catch kill signal */
 }
 
 void daemonize()
@@ -105,7 +107,7 @@ int main(int argc, char *argv[])
 	engine.rootContext()->setContextProperty("log", &lg);
 	engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
 	if (engine.rootObjects().isEmpty())
-	  return -1;
+		return -1;
 
 
 	using namespace QsLogging;
@@ -117,80 +119,76 @@ int main(int argc, char *argv[])
 
 	// 2. add two destinations
 	DestinationPtr fileDestination(DestinationFactory::MakeFileDestination(
-					sLogPath, EnableLogRotation, MaxSizeBytes(512), MaxOldLogCount(2)));
+				sLogPath, EnableLogRotation, MaxSizeBytes(512), MaxOldLogCount(2)));
 	DestinationPtr debugDestination(DestinationFactory::MakeDebugOutputDestination());
 	DestinationPtr functorDestination(DestinationFactory::MakeFunctorDestination(&logFunction));
 	logger.addDestination(debugDestination);
-    //logger.addDestination(fileDestination);
+	//logger.addDestination(fileDestination);
 	logger.addDestination(functorDestination);
 
 #else
 	Cout::instance();
 	QLOG_INFO() << "Program started ";
 #endif
-    NET::NodeId id;
-    ebcCryptoLib cl;
-    cl.randomNbytes(id.data(), ID_LENGTH);
-    id.printNodeId();
-    Sp<NET::Bucket> kad = std::make_shared <Bucket>(id);
-    NET::NetEngine net(id, kad);
-    //服务器或是客户机的K桶
+	NET::NodeId id;
+	ebcCryptoLib cl;
+	cl.randomNbytes(id.data(), ID_LENGTH);
+	id.printNodeId();
+	Sp<NET::Bucket> kad = std::make_shared <Bucket>(id);
+	NET::NetEngine net(id, kad);
+	//服务器或是客户机的K桶
 
 #ifndef ON_QT
 	if(argc >= 2 && !strcmp(argv[1], "-d"))	
 	{
-        printNode = [&kad](int type)
+		printNode = [&kad](int type)
 		{
-            kad.dump(type);
+			kad->dump(type);
 		};
 		daemonize();
+		net.startServer();
 
 		while(1)
-		  sleep(30);
+			sleep(30);
 	}
 	else
 	{
-		net.startClient();
-        std::thread cmd= std::thread([&kad]()
-					{
-					//接收用户输入命令线程
-					QLOG_INFO()<<"Usege: ";
-					QLOG_INFO()<<"0: Print all node info";
-					QLOG_INFO()<<"q: quit the app";
+		net.startServer();
+		std::thread cmd= std::thread([&kad]()
+				{
+				//接收用户输入命令线程
+				QLOG_INFO()<<"Usege: ";
+				QLOG_INFO()<<"0: Print all node info";
+				QLOG_INFO()<<"q: quit the app";
 
-					char c=0;
-					while((c=getchar()) != 'q')
-					{
-					switch(c)
-					{
-					case '0':
-                        kad.dump(0);
-                        break;
-                    case '1':
-                        kad.dump(1);
-                        break;
-                    kad.dump();
+				char c=0;
+				while((c=getchar()) != 'q')
+				{
+				switch(c)
+				{
+				case '0':
+				kad->dump(0);
+				break;
+				case '1':
+				kad->dump(1);
+				break;
+				case '\n':
 					break;
-					case '1':
-                    kad.dump();;
-					break;
-					case '\n':
-					break;
-					default:
-					QLOG_INFO()<<"Unkown cmd!";
-					break;
-					}
-					}
-					}
+				default:
+				QLOG_ERROR()<<"invalid cmd!";
+				break;
+				}
+				}
+				}
 		);
 
 		cmd.join();
 	}
 	return 0;
 #else
-    lg.passKad(kad,&net);
-    net.startClient();
-    return app.exec();
+	lg.passKad(kad,&net);
+	net.startClient();
+	return app.exec();
 #endif
 
 }
