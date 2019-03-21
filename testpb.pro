@@ -24,6 +24,7 @@ SOURCES += \
     src/msgpack.cpp \
     src/utils.cpp \
     src/logsignal.cpp \
+    src/search.cpp
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -64,7 +65,8 @@ HEADERS += \
     include/ebcCryptoLib.h \
     include/QsLog.h \
     include/logsignal.h \
-    include/nodeid.h
+    include/nodeid.h \
+    include/search.h
 
 RESOURCES += \
     qml.qrc

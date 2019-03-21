@@ -34,13 +34,14 @@ message EbcNodes//服务器发回节点的消息
 
 message search
 {
-  bool isId = 1;//此值判断是查Id还是查value
+  bool isValue=1 [default = true];
   bytes tid = 2;//tid
   bytes targetId = 3;//目标
   EbcNodes nodes = 4;//search节点信息
   bytes value = 5;//被查找的value
 }
   
+}
 
 message EbcMsg
 {

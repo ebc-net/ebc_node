@@ -8,7 +8,7 @@ namespace NET
 {
 
 Node::Node(const NodeId & _id, const SockAddr _addr, const NatType _nat, const NodeState  _state)
-    :id(_id),addr(_addr), state(_state),nat(_nat),last_tm(time_point::max()), ping_count(0)
+    :id(_id),addr(_addr), state(_state),nat(_nat)
 {
     if(_id.size() > ID_LENGTH)
     {
@@ -64,17 +64,6 @@ const UDTSOCKET &Node::getSock()
     return sock;
 }
 
-
-void Node::setPingCount(const uint8_t &count)
-{
-    ping_count = count;
-}
-
-const uint8_t &Node::getPingCount()
-{
-    return ping_count;
-}
-
 bool Node::operator==(const Node &o)
 {
     return memcmp(this, &o, sizeof(*this)) == 0;  //可能用BUG， 因为sockaddr是指针
@@ -86,10 +75,7 @@ Node &Node::operator=(const Node &o)
     addr = o.addr;
     state = o.state;
     nat = o.nat;
-    last_tm = o.last_tm;
-    ping_count = o.ping_count;
     sock = o.sock;
-
     return *this;
 }
 

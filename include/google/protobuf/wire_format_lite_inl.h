@@ -40,12 +40,18 @@
 #include <string>
 #include <google/protobuf/stubs/common.h>
 #include <google/protobuf/stubs/logging.h>
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/arenastring.h>
 #include <google/protobuf/message_lite.h>
 #include <google/protobuf/repeated_field.h>
 #include <google/protobuf/wire_format_lite.h>
-#include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/arenastring.h>
 
+
+#ifdef SWIG
+#error "You cannot SWIG proto headers"
+#endif
+
+#include <google/protobuf/port_def.inc>
 
 namespace google {
 namespace protobuf {
@@ -426,48 +432,12 @@ bool WireFormatLite::ReadPackedPrimitiveNoInline(io::CodedInputStream* input,
 }
 
 
-inline bool WireFormatLite::ReadGroup(int field_number,
-                                      io::CodedInputStream* input,
-                                      MessageLite* value) {
+template<typename MessageType>
+inline bool WireFormatLite::ReadGroup(
+    int field_number, io::CodedInputStream* input,
+    MessageType* value) {
   if (!input->IncrementRecursionDepth()) return false;
   if (!value->MergePartialFromCodedStream(input)) return false;
-  input->DecrementRecursionDepth();
-  // Make sure the last thing read was an end tag for this group.
-  if (!input->LastTagWas(MakeTag(field_number, WIRETYPE_END_GROUP))) {
-    return false;
-  }
-  return true;
-}
-inline bool WireFormatLite::ReadMessage(io::CodedInputStream* input,
-                                        MessageLite* value) {
-  int length;
-  if (!input->ReadVarintSizeAsInt(&length)) return false;
-  std::pair<io::CodedInputStream::Limit, int> p =
-      input->IncrementRecursionDepthAndPushLimit(length);
-  if (p.second < 0 || !value->MergePartialFromCodedStream(input)) return false;
-  // Make sure that parsing stopped when the limit was hit, not at an endgroup
-  // tag.
- return input->DecrementRecursionDepthAndPopLimit(p.first);
-}
-
-// We name the template parameter something long and extremely unlikely to occur
-// elsewhere because a *qualified* member access expression designed to avoid
-// virtual dispatch, C++03 [basic.lookup.classref] 3.4.5/4 requires that the
-// name of the qualifying class to be looked up both in the context of the full
-// expression (finding the template parameter) and in the context of the object
-// whose member we are accessing. This could potentially find a nested type
-// within that object. The standard goes on to require these names to refer to
-// the same entity, which this collision would violate. The lack of a safe way
-// to avoid this collision appears to be a defect in the standard, but until it
-// is corrected, we choose the name to avoid accidental collisions.
-template<typename MessageType_WorkAroundCppLookupDefect>
-inline bool WireFormatLite::ReadGroupNoVirtual(
-    int field_number, io::CodedInputStream* input,
-    MessageType_WorkAroundCppLookupDefect* value) {
-  if (!input->IncrementRecursionDepth()) return false;
-  if (!value->
-      MessageType_WorkAroundCppLookupDefect::MergePartialFromCodedStream(input))
-    return false;
   input->UnsafeDecrementRecursionDepth();
   // Make sure the last thing read was an end tag for this group.
   if (!input->LastTagWas(MakeTag(field_number, WIRETYPE_END_GROUP))) {
@@ -475,39 +445,17 @@ inline bool WireFormatLite::ReadGroupNoVirtual(
   }
   return true;
 }
-template<typename MessageType_WorkAroundCppLookupDefect>
-inline bool WireFormatLite::ReadGroupNoVirtualNoRecursionDepth(
-    int field_number, io::CodedInputStream* input,
-    MessageType_WorkAroundCppLookupDefect* value) {
-  return value->MessageType_WorkAroundCppLookupDefect::
-             MergePartialFromCodedStream(input) &&
-         input->LastTagWas(MakeTag(field_number, WIRETYPE_END_GROUP));
-}
-template<typename MessageType_WorkAroundCppLookupDefect>
-inline bool WireFormatLite::ReadMessageNoVirtual(
-    io::CodedInputStream* input, MessageType_WorkAroundCppLookupDefect* value) {
+template<typename MessageType>
+inline bool WireFormatLite::ReadMessage(
+    io::CodedInputStream* input, MessageType* value) {
   int length;
   if (!input->ReadVarintSizeAsInt(&length)) return false;
   std::pair<io::CodedInputStream::Limit, int> p =
       input->IncrementRecursionDepthAndPushLimit(length);
-  if (p.second < 0 || !value->
-      MessageType_WorkAroundCppLookupDefect::MergePartialFromCodedStream(input))
-    return false;
+  if (p.second < 0 || !value->MergePartialFromCodedStream(input)) return false;
   // Make sure that parsing stopped when the limit was hit, not at an endgroup
   // tag.
   return input->DecrementRecursionDepthAndPopLimit(p.first);
-}
-
-template<typename MessageType_WorkAroundCppLookupDefect>
-inline bool WireFormatLite::ReadMessageNoVirtualNoRecursionDepth(
-    io::CodedInputStream* input, MessageType_WorkAroundCppLookupDefect* value) {
-  io::CodedInputStream::Limit old_limit = input->ReadLengthAndPushLimit();
-  if (!value->
-      MessageType_WorkAroundCppLookupDefect::MergePartialFromCodedStream(input))
-    return false;
-  // Make sure that parsing stopped when the limit was hit, not at an endgroup
-  // tag.
-  return input->CheckEntireMessageConsumedAndPopLimit(old_limit);
 }
 
 // ===================================================================
@@ -924,7 +872,7 @@ inline uint8* WireFormatLite::WriteEnumToArray(
   return WritePrimitiveToArray(field_number, value, WriteEnumToArray, target);
 }
 inline uint8* WireFormatLite::WriteStringToArray(int field_number,
-                                                 const string& value,
+                                                 const std::string& value,
                                                  uint8* target) {
   // String is for UTF-8 text only
   // WARNING:  In wire_format.cc, both strings and bytes are handled by
@@ -934,51 +882,51 @@ inline uint8* WireFormatLite::WriteStringToArray(int field_number,
   return io::CodedOutputStream::WriteStringWithSizeToArray(value, target);
 }
 inline uint8* WireFormatLite::WriteBytesToArray(int field_number,
-                                                const string& value,
+                                                const std::string& value,
                                                 uint8* target) {
   target = WriteTagToArray(field_number, WIRETYPE_LENGTH_DELIMITED, target);
   return io::CodedOutputStream::WriteStringWithSizeToArray(value, target);
 }
 
 
+template <typename MessageType>
 inline uint8* WireFormatLite::InternalWriteGroupToArray(
-    int field_number, const MessageLite& value, bool deterministic,
-    uint8* target) {
+    int field_number, const MessageType& value, uint8* target) {
   target = WriteTagToArray(field_number, WIRETYPE_START_GROUP, target);
-  target = value.InternalSerializeWithCachedSizesToArray(deterministic, target);
+  target = value.InternalSerializeWithCachedSizesToArray(target);
   return WriteTagToArray(field_number, WIRETYPE_END_GROUP, target);
 }
+template <typename MessageType>
 inline uint8* WireFormatLite::InternalWriteMessageToArray(
-    int field_number, const MessageLite& value, bool deterministic,
-    uint8* target) {
+    int field_number, const MessageType& value, uint8* target) {
   target = WriteTagToArray(field_number, WIRETYPE_LENGTH_DELIMITED, target);
   target = io::CodedOutputStream::WriteVarint32ToArray(
     static_cast<uint32>(value.GetCachedSize()), target);
-  return value.InternalSerializeWithCachedSizesToArray(deterministic, target);
+  return value.InternalSerializeWithCachedSizesToArray(target);
 }
 
 // See comment on ReadGroupNoVirtual to understand the need for this template
 // parameter name.
-template<typename MessageType_WorkAroundCppLookupDefect>
+template <typename MessageType_WorkAroundCppLookupDefect>
 inline uint8* WireFormatLite::InternalWriteGroupNoVirtualToArray(
     int field_number, const MessageType_WorkAroundCppLookupDefect& value,
-    bool deterministic, uint8* target) {
+    uint8* target) {
   target = WriteTagToArray(field_number, WIRETYPE_START_GROUP, target);
   target = value.MessageType_WorkAroundCppLookupDefect::
-      InternalSerializeWithCachedSizesToArray(deterministic, target);
+               InternalSerializeWithCachedSizesToArray(target);
   return WriteTagToArray(field_number, WIRETYPE_END_GROUP, target);
 }
-template<typename MessageType_WorkAroundCppLookupDefect>
+template <typename MessageType_WorkAroundCppLookupDefect>
 inline uint8* WireFormatLite::InternalWriteMessageNoVirtualToArray(
     int field_number, const MessageType_WorkAroundCppLookupDefect& value,
-    bool deterministic, uint8* target) {
+    uint8* target) {
   target = WriteTagToArray(field_number, WIRETYPE_LENGTH_DELIMITED, target);
   target = io::CodedOutputStream::WriteVarint32ToArray(
         static_cast<uint32>(
             value.MessageType_WorkAroundCppLookupDefect::GetCachedSize()),
         target);
   return value.MessageType_WorkAroundCppLookupDefect::
-      InternalSerializeWithCachedSizesToArray(deterministic, target);
+      InternalSerializeWithCachedSizesToArray(target);
 }
 
 // ===================================================================
@@ -1005,18 +953,20 @@ inline size_t WireFormatLite::EnumSize(int value) {
   return io::CodedOutputStream::VarintSize32SignExtended(value);
 }
 
-inline size_t WireFormatLite::StringSize(const string& value) {
+inline size_t WireFormatLite::StringSize(const std::string& value) {
   return LengthDelimitedSize(value.size());
 }
-inline size_t WireFormatLite::BytesSize(const string& value) {
+inline size_t WireFormatLite::BytesSize(const std::string& value) {
   return LengthDelimitedSize(value.size());
 }
 
 
-inline size_t WireFormatLite::GroupSize(const MessageLite& value) {
+template<typename MessageType>
+inline size_t WireFormatLite::GroupSize(const MessageType& value) {
   return value.ByteSizeLong();
 }
-inline size_t WireFormatLite::MessageSize(const MessageLite& value) {
+template<typename MessageType>
+inline size_t WireFormatLite::MessageSize(const MessageType& value) {
   return LengthDelimitedSize(value.ByteSizeLong());
 }
 
@@ -1043,35 +993,80 @@ inline size_t WireFormatLite::LengthDelimitedSize(size_t length) {
       static_cast<uint32>(length));
 }
 
-size_t WireFormatLite::Int64Size (const RepeatedField< int64>& value) {
-  size_t out = 0;
-  const int n = value.size();
-  for (int i = 0; i < n; i++) {
-    out += Int64Size(value.Get(i));
-  }
-  return out;
-}
+template <typename MS>
+bool ParseMessageSetItemImpl(io::CodedInputStream* input, MS ms) {
+  // This method parses a group which should contain two fields:
+  //   required int32 type_id = 2;
+  //   required data message = 3;
 
-size_t WireFormatLite::UInt64Size(const RepeatedField<uint64>& value) {
-  size_t out = 0;
-  const int n = value.size();
-  for (int i = 0; i < n; i++) {
-    out += UInt64Size(value.Get(i));
-  }
-  return out;
-}
+  uint32 last_type_id = 0;
 
-size_t WireFormatLite::SInt64Size(const RepeatedField< int64>& value) {
-  size_t out = 0;
-  const int n = value.size();
-  for (int i = 0; i < n; i++) {
-    out += SInt64Size(value.Get(i));
+  // If we see message data before the type_id, we'll append it to this so
+  // we can parse it later.
+  std::string message_data;
+
+  while (true) {
+    const uint32 tag = input->ReadTagNoLastTag();
+    if (tag == 0) return false;
+
+    switch (tag) {
+      case WireFormatLite::kMessageSetTypeIdTag: {
+        uint32 type_id;
+        if (!input->ReadVarint32(&type_id)) return false;
+        last_type_id = type_id;
+
+        if (!message_data.empty()) {
+          // We saw some message data before the type_id.  Have to parse it
+          // now.
+          io::CodedInputStream sub_input(
+              reinterpret_cast<const uint8*>(message_data.data()),
+              static_cast<int>(message_data.size()));
+          if (!ms.ParseField(last_type_id, &sub_input)) {
+            return false;
+          }
+          message_data.clear();
+        }
+
+        break;
+      }
+
+      case WireFormatLite::kMessageSetMessageTag: {
+        if (last_type_id == 0) {
+          // We haven't seen a type_id yet.  Append this data to message_data.
+          uint32 length;
+          if (!input->ReadVarint32(&length)) return false;
+          if (static_cast<int32>(length) < 0) return false;
+          uint32 size = static_cast<uint32>(length +
+              io::CodedOutputStream::VarintSize32(length));
+          message_data.resize(size);
+          auto ptr = reinterpret_cast<uint8*>(&message_data[0]);
+          ptr = io::CodedOutputStream::WriteVarint32ToArray(length, ptr);
+          if (!input->ReadRaw(ptr, length)) return false;
+        } else {
+          // Already saw type_id, so we can parse this directly.
+          if (!ms.ParseField(last_type_id, input)) {
+            return false;
+          }
+        }
+
+        break;
+      }
+
+      case WireFormatLite::kMessageSetItemEndTag: {
+        return true;
+      }
+
+      default: {
+        if (!ms.SkipField(tag, input)) return false;
+      }
+    }
   }
-  return out;
 }
 
 }  // namespace internal
 }  // namespace protobuf
-
 }  // namespace google
+
+#include <google/protobuf/port_undef.inc>
+
 #endif  // GOOGLE_PROTOBUF_WIRE_FORMAT_LITE_INL_H__

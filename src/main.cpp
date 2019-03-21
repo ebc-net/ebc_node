@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
 	DestinationPtr debugDestination(DestinationFactory::MakeDebugOutputDestination());
 	DestinationPtr functorDestination(DestinationFactory::MakeFunctorDestination(&logFunction));
 	logger.addDestination(debugDestination);
-	logger.addDestination(fileDestination);
+    //logger.addDestination(fileDestination);
 	logger.addDestination(functorDestination);
 
 #else
@@ -132,22 +132,16 @@ int main(int argc, char *argv[])
     ebcCryptoLib cl;
     cl.randomNbytes(id.data(), ID_LENGTH);
     id.printNodeId();
-    NET::Bucket kad(id);
-    NET::NetEngine net(id,&kad);
+    Sp<NET::Bucket> kad = std::make_shared <Bucket>(id);
+    NET::NetEngine net(id, kad);
     //服务器或是客户机的K桶
 
-#if 1
 #ifndef ON_QT
 	if(argc >= 2 && !strcmp(argv[1], "-d"))	
 	{
         printNode = [&kad](int type)
 		{
-			if(type == 0)
-                kad.dump();
-//				net.printNodesInfo();
-//			else if(type == 1)
-//				net.printNodesInfo(1);
-
+            kad.dump(type);
 		};
 		daemonize();
 
@@ -170,6 +164,11 @@ int main(int argc, char *argv[])
 					switch(c)
 					{
 					case '0':
+                        kad.dump(0);
+                        break;
+                    case '1':
+                        kad.dump(1);
+                        break;
                     kad.dump();
 					break;
 					case '1':
@@ -189,10 +188,10 @@ int main(int argc, char *argv[])
 	}
 	return 0;
 #else
-    lg.passKad(&kad);
+    lg.passKad(kad,&net);
     net.startClient();
     return app.exec();
 #endif
-#endif
+
 }
 

@@ -15,6 +15,7 @@ namespace  NET
 #define SRV_PORT   (9444)
 #define ID_LENGTH  (20)
 #define MAX_NODE   (3)
+#define MAX_SEARCH_NODE  (14)
 #define comPortNat(port,nat)  (((port)<<(16)) | ((nat)&(0xf)<<(12)))
 #define parPort(value)        (((value)&(0xffff0000))>>16)
 #define parNat(value)         (((value)&(0xf000)) >> 12)
@@ -25,6 +26,7 @@ using Sp = std::shared_ptr<T>;
 using clock = std::chrono::steady_clock;
 using time_point = clock::time_point;
 using seconds = std::chrono::seconds;
+
 }
 
 #endif // UTILS_H

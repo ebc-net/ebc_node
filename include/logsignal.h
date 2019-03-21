@@ -4,6 +4,9 @@
 
 #include <QObject>
 #include "bucket.h"
+#include"search.h"
+#include"netengine.h"
+#include "utils.h"
 
 
 class logSignal :public QObject
@@ -11,16 +14,19 @@ class logSignal :public QObject
     Q_OBJECT
 
 public:
-    logSignal():kad(nullptr){}
+    logSignal():kad(nullptr),eng(nullptr){}
+
     Q_INVOKABLE void start();
     Q_INVOKABLE void searchId(std::string &);
 
-    void passKad(NET::Bucket* B){ kad = B;}
+    void passKad(NET::Sp<NET::Bucket> B,NET::NetEngine *E){ kad = B;eng = E;}
+
 signals:
     void newLog( QString str,int level);
 
 private:
-    NET::Bucket *kad;
+    NET::Sp<NET::Bucket> kad;
+    NET::NetEngine *eng;
 
 
 };

@@ -8,7 +8,7 @@
 #include "utils.h"
 #include"nodeid.h"
 namespace NET{
-class Node
+class   Node
 {
 public:
 #define MAX_PING  (3)
@@ -33,7 +33,7 @@ public:
 
 
     /*******************************function*****************/
-    Node():id(), state(CONNECTED), nat(SYMMTRIC), ping_count(0) {}
+    Node():id(), state(CONNECTED), nat(SYMMTRIC){}
     Node(const NodeId & _id, const SockAddr _addr=nullptr, const NatType _nat=SYMMTRIC, const NodeState  _state=CONNECTED);
 
     const NodeId& getId();
@@ -50,12 +50,8 @@ public:
     void setSock(const UDTSOCKET& _sock);
     const UDTSOCKET& getSock();
 
-    void setPingCount(const uint8_t &count);
-    const uint8_t &getPingCount();
-
     bool operator==(const Node& o);
     Node& operator=(const Node& o);
-
 
     /**************static function******************/
     static void printNodeState(const NodeState _state);
@@ -69,9 +65,8 @@ private:
     SockAddr addr;
     NodeState state;
     NatType nat;
-    time_point last_tm;  //上次消息达到的时间
-    uint8_t  ping_count;
     UDTSOCKET sock;
+
 };
 }
 #endif // NODE_H

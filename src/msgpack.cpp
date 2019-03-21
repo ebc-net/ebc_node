@@ -11,7 +11,7 @@ msgPack::msgPack(const NET::NodeId &_id):self_id(_id)
     ebcMsg.Clear();
 }
 
-int msgPack::pack(config::MsgType type, void *msg, void *buf, int size,config::MsgSubType subType,const NET::NodeId dstId)
+int msgPack::pack(config::MsgType type, void *msg, void *buf, int size,config::MsgSubType subType)
 {
     ebcMsg.set_head(msgHead);//0xF5FA
     ebcMsg.set_version(NET_VERSION);//V0.0.0
@@ -29,7 +29,6 @@ int msgPack::pack(config::MsgType type, void *msg, void *buf, int size,config::M
     }
     case config::MsgType::REP:                       //服务器应答
     {
-        ebcMsg.set_dst_id(&dstId, dstId.size());
         ebcMsg.set_sub_type(subType);
         if(config::MsgSubType::NODE == subType)
         {
@@ -37,16 +36,20 @@ int msgPack::pack(config::MsgType type, void *msg, void *buf, int size,config::M
             ebcMsg.mutable_nodes()->CopyFrom(*nodes);  //这个是深拷贝还是浅拷贝
             ebcMsg.set_length(nodes->ByteSizeLong());
         }
-        else if(config::MsgSubType::DATA == subType)
+        else if(config::MsgSubType::DATA == subType)//回复搜索的ID.添加tid和回复的节点
         {
-            std::string msg_body((char *)msg);
-            ebcMsg.set_msg(msg_body);
-            ebcMsg.set_length(msg_body.length());
+            config::search *sr = (config::search*)msg;
+            ebcMsg.mutable_msg()->CopyFrom(*sr);
+            ebcMsg.set_length(sr->ByteSizeLong());
         }
         break;
     }
     case config::MsgType::GET_DATA:
+    {
+        config::search *sr = (config::search*)msg;
+        ebcMsg.set_length(sr->ByteSizeLong());
         break;
+    }
     case config::MsgType::PUNCH:
     {
         config::EbcNode* node = (config::EbcNode *)msg;  //发送需要打洞的对端节点的信息
@@ -96,7 +99,7 @@ int msgPack::unpack(const void *buf, int len)
     }
     else
     {
-        if(ebcMsg.length() != ebcMsg.msg().length())
+        if(ebcMsg.length() != ebcMsg.msg().ByteSizeLong())
         {
             QLOG_ERROR()<<"get msg length error";
             return -1;
@@ -162,9 +165,20 @@ void msgPack::msgPrint()
             QLOG_INFO()<<"node port "<<nodes.ebcnodes(i).port_nat();
         }
     }
-    else if(!ebcMsg.msg().empty())
+    else if(!ebcMsg.has_msg())
     {
-        QLOG_INFO()<<"msg body: "<<ebcMsg.msg().c_str();
+        config::search sr = ebcMsg.msg();
+        int node_count = sr.nodes().ebcnodes_size();
+        QLOG_INFO()<<"search id";
+        NodeId(sr.tid()).printNodeId();
+        for(int i=0; i<node_count; ++i)
+        {
+            QLOG_INFO()<<"node id ";
+            NodeId(sr.nodes().ebcnodes(i).id()).printNodeId();
+            QLOG_INFO()<<"node ip "<<sr.nodes().ebcnodes(i).ip();//注意，无法打印
+            QLOG_INFO()<<"node port "<<sr.nodes().ebcnodes(i).port_nat();
+        }
+
     }
 }
 

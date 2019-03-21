@@ -28,49 +28,43 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// Author: kenton@google.com (Kenton Varda)
-//  Based on original Protocol Buffers design by
-//  Sanjay Ghemawat, Jeff Dean, and others.
-//
-// Generates Java code for a given .proto file.
+// #undefs all macros defined in port_def.inc.  See comments in port_def.inc
+// for more info.
 
-#ifndef GOOGLE_PROTOBUF_COMPILER_JAVA_GENERATOR_H__
-#define GOOGLE_PROTOBUF_COMPILER_JAVA_GENERATOR_H__
+#ifndef PROTOBUF_NAMESPACE
+#error "port_undef.inc must be included after port_def.inc"
+#endif
+#undef PROTOBUF_NAMESPACE
+#undef PROTOBUF_NAMESPACE_ID
+#undef PROTOBUF_ALWAYS_INLINE
+#undef PROTOBUF_COLD
+#undef PROTOBUF_NOINLINE
+#undef PROTOBUF_SECTION_VARIABLE
+#undef PROTOBUF_DEPRECATED
+#undef PROTOBUF_DEPRECATED_MSG
+#undef PROTOBUF_FUNC_ALIGN
+#undef PROTOBUF_RETURNS_NONNULL
+#undef PROTOBUF_ATTRIBUTE_REINITIALIZES
+#undef PROTOBUF_RTTI
+#undef PROTOBUF_VERSION
+#undef PROTOBUF_VERSION_SUFFIX
+#undef PROTOBUF_FIELD_OFFSET
+#undef PROTOBUF_MIN_HEADER_VERSION_FOR_PROTOC
+#undef PROTOBUF_PREDICT_TRUE
+#undef PROTOBUF_PREDICT_FALSE
+#undef PROTOBUF_LONGLONG
+#undef PROTOBUF_ULONGLONG
+#undef PROTOBUF_LL_FORMAT
+#undef PROTOBUF_GUARDED_BY
+#undef PROTOBUF_FALLTHROUGH_INTENDED
+#undef PROTOBUF_EXPORT
+#undef PROTOC_EXPORT
 
-#include <string>
-#include <google/protobuf/compiler/code_generator.h>
+// Restore macro that may have been #undef'd in port_def.inc.
+#ifdef _MSC_VER
+#pragma pop_macro("GetMessage")
+#endif
 
-#include <google/protobuf/port_def.inc>
-
-namespace google {
-namespace protobuf {
-namespace compiler {
-namespace java {
-
-// CodeGenerator implementation which generates Java code.  If you create your
-// own protocol compiler binary and you want it to support Java output, you
-// can do so by registering an instance of this CodeGenerator with the
-// CommandLineInterface in your main() function.
-class PROTOC_EXPORT JavaGenerator : public CodeGenerator {
- public:
-  JavaGenerator();
-  ~JavaGenerator();
-
-  // implements CodeGenerator ----------------------------------------
-  bool Generate(const FileDescriptor* file,
-                const std::string& parameter,
-                GeneratorContext* context,
-                std::string* error) const;
-
- private:
-  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(JavaGenerator);
-};
-
-}  // namespace java
-}  // namespace compiler
-}  // namespace protobuf
-}  // namespace google
-
-#include <google/protobuf/port_undef.inc>
-
-#endif  // GOOGLE_PROTOBUF_COMPILER_JAVA_GENERATOR_H__
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif

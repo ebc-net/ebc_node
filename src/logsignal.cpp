@@ -2,31 +2,19 @@
 #include "logsignal.h"
 #include "QsLog.h"
 #include"bucket.h"
+#include"netengine.h"
 
 
 
 
 void logSignal::start()
 {
-    kad->dump();
+    kad->dump(0);
 }
 
 void logSignal::searchId(std::string &id)
 {
-    NET::NodeId search_id(id);
-    //加search结构？
-    if(kad->findNode(id))
-    {
-        QLOG_INFO()<<"find the node in local buckets";
-        return;
-    }
-
-    auto targetNodes = kad->findClosestNodes(id,3);
-    //调用搜索函数向这三个node搜索此id
-
-
-
-
+    eng->startSearch(id);
 }
 
 #endif

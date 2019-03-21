@@ -4,29 +4,22 @@
 #include <list>
 #include <functional>
 #include<bitset>
+#include<random>
 #include "nodeid.h"
 #include "node.h"
 #include "utils.h"
+#include<ctime>
 
 namespace NET
 {
-struct bucket {
+struct bucket
+{
     bucket() : cached() {}
-    bucket(sa_family_t af, const NodeId& f = {}, time_point t = time_point::min()): af(af), first(f), cached() {}
+    bucket(sa_family_t af, const NodeId& f = {}): af(af), first(f), cached() {}
     sa_family_t af {0};
     NodeId first {};
     std::list<Sp<Node>> nodes {};
     Sp<Node> cached;                    /* the address of a likely candidate */
-
-    /** Return a random node in a bucket. */
-    //Sp<Node> randomNode();
-
-    //void sendCachedPing(net::NetworkEngine& ne);
-    //void connectivityChanged() {
-    //    time = time_point::min();
-    //    for (auto& node : nodes)
-    //        node->setTime(time_point::min());
-    //}
 };
 
 
@@ -36,6 +29,7 @@ class Bucket
 public:
     using Kbucket = std::list<bucket>;
     using destoryNet = std::function<void(int)>;
+    using sendNode = std::function<void(Sp<Node> &dstId, NodeId targetId)>;
     time_point grow_time {time_point::min()};
     Bucket(const NodeId &_id);
     NodeId middle(const Kbucket::const_iterator &it) const;
@@ -47,10 +41,11 @@ public:
     inline bool contains(const Kbucket::const_iterator &it, const NodeId& id) const;
     bool onNewNode(const Sp<Node>& node, int confirm, bool isServer=false) ;
     bool findNode(const NodeId &id);
-    bool bucketMaintenance(std::function<void(Sp<Node> &dstId, NodeId targetId)>,bool neighbour = true);//
+    Sp<Node> getNode(const NodeId &id);
+    bool bucketMaintenance(sendNode,bool neighbour = true);//用neighbour = true 扩桶，neighbour = false 桶维护
     bool split(const Kbucket::iterator &b);
     void closeBucket(destoryNet d);
-    void dump() const;
+    void dump(int type) const;
 
 private:    
     Kbucket buckets;
