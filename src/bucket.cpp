@@ -151,7 +151,7 @@ bool Bucket::onNewNode(const Sp<Node>& node, int confirm, bool isServer)
             }
         }
 
-        int dNum = isServer?11:6;
+        int dNum = isServer?11:1;
         if (mybucket || depth(b) < dNum) {
             split(b);
             return onNewNode(node, confirm);

@@ -17,7 +17,7 @@ public:
     logSignal():kad(nullptr),eng(nullptr){}
 
     Q_INVOKABLE void start();
-    Q_INVOKABLE void searchId(std::string &);
+    Q_INVOKABLE void searchId(QString );
 
     void passKad(NET::Sp<NET::Bucket> B,NET::NetEngine *E){ kad = B;eng = E;}
 

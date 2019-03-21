@@ -66,11 +66,11 @@ Window
     TextField
     {
         id: node_id
-        width: 166
+        width: 330
 
-        inputMask: "xxxx xxxx xxxx xxxx xxxx"
+        //inputMask: "xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx"
 
-        text:"0000 0000 0000 0000 0000"
+       // text:"0000 0000 0000 0000 0000 0000 0000 0000 0000 0000"
 
         anchors.horizontalCenter: rectangle.horizontalCenter
 
@@ -101,7 +101,7 @@ Window
         onClicked:
         {
             console.log("searching   "+node_id.text)
-            log.search(node_id.text)
+            log.searchId(node_id.text)
         }
     }
 
