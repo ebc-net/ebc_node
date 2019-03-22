@@ -156,6 +156,8 @@ bool Bucket::onNewNode(const Sp<Node>& node, int confirm, bool isServer)
             split(b);
             return onNewNode(node, confirm);
         }
+        QLOG_WARN()<<"drop new node for bucket full : ";
+        node->getId().printNodeId(true);
 
         /* No space for this node.  Cache it away for later. */
         if (confirm or not b->cached)
@@ -200,9 +202,11 @@ bool Bucket::bucketMaintenance(sendNode sendFindNode, bool neighbour)
         q = buckets.begin();
     else
         q=findBucket(selfId);
+
     Sp<Node> dstNode{};
     while ( q != buckets.end())
     {
+        dstNode.reset();
         int goodNode = 0;
         if(q->nodes.empty())
         {
@@ -219,7 +223,7 @@ bool Bucket::bucketMaintenance(sendNode sendFindNode, bool neighbour)
             }
         }
 
-        if(!neighbour && (goodNode < (q->nodes.size()-goodNode)))
+        if(!neighbour && (goodNode < (q->nodes.size()-goodNode)) && (goodNode > 0))
         {
             sendFindNode(dstNode, randomId(q));
             return true;

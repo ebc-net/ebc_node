@@ -245,7 +245,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
                 else
                 {
                     QLOG_ERROR()<<"peer connect error1";
-                    sockNodePair[sock]->getId().printNodeId();
+                    sockNodePair[sock]->getId().printNodeId(true);
                     UDT::close(sock);
                     setNodeExpired(sock);
                     sockNodePair.erase(sock);
@@ -570,13 +570,18 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
             config::EbcNodes nodes = msg.nodes();
             config::EbcNode node;
             int node_count = nodes.ebcnodes_size();
+            QLOG_WARN()<<"get reply nodes:";
             for(int i=0; i<node_count; ++i)
             {
                 node = nodes.ebcnodes(i);
 
                 //filter self node in reply
+                NodeId(node.id()).printNodeId();
                 if(NodeId(node.id()) == self.getId())
+                {
+                    QLOG_WARN()<<"filter sefl success!";
                     continue;
+                }
 
                 //开始UDT的打洞
                 UDTSOCKET sock = UDT::INVALID_SOCK;
