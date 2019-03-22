@@ -195,7 +195,6 @@ Sp<Node> Bucket::getNode(const NodeId &id)
 
 bool Bucket::bucketMaintenance(sendNode sendFindNode, bool neighbour)
 {
-    int goodNode = 0;
     Kbucket::iterator q;
     if(!neighbour)
         q = buckets.begin();
@@ -204,6 +203,7 @@ bool Bucket::bucketMaintenance(sendNode sendFindNode, bool neighbour)
     Sp<Node> dstNode{};
     while ( q != buckets.end())
     {
+        int goodNode = 0;
         if(q->nodes.empty())
         {
             q = std::next(q);
@@ -219,7 +219,7 @@ bool Bucket::bucketMaintenance(sendNode sendFindNode, bool neighbour)
             }
         }
 
-        if(!neighbour && goodNode < 3 && goodNode >0 )
+        if(!neighbour && (goodNode < (q->nodes.size()-goodNode)))
         {
             sendFindNode(dstNode, randomId(q));
             return true;
