@@ -33,7 +33,7 @@ struct search
 class Search
 {
 public:
-    Search(Sp<Bucket> _kad):kad(_kad){}
+    Search(Sp<Bucket> _kad):kad(_kad){searches.clear();}
     using Searches = std::list<search>;//searchlist
     Searches::iterator findSearchList(const NodeId& tid);
     bool addSearchNode(Sp<Node> &node, NodeId tid);

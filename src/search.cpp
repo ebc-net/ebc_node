@@ -96,10 +96,12 @@ int Search::dhtSearch(NodeId tid, std::function<void (NodeId, Node &snode)> call
     }
 
     auto nodes = kad->findClosestNodes(tid,8);
+	QLOG_WARN()<<"find closest node : ";
     for(auto &n :nodes)
     {
         if(!addSearchNode(n,tid))
             return -1;
+		n->getId().printNodeId();
     }
     searchStep(tid,send);
     return 0;

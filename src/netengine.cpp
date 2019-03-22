@@ -455,6 +455,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
             //开始查找节点并发送打洞信息
             NodeId cli_id(msg.src_id());
             std::list<Sp<Node>> sendnodes = kad->repNodes(cli_id);
+			QLOG_WARN()<<"rep node num= "<<sendnodes.size();
             for (auto &node:sendnodes)
             {
                 auto tmp = nodes.add_ebcnodes();
