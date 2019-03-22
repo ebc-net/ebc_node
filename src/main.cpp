@@ -154,7 +154,8 @@ int main(int argc, char *argv[])
 	else
 	{
 		net.startServer();
-		std::thread cmd= std::thread([&kad]()
+		//net.startClient();
+		std::thread cmd= std::thread([&net,&id,&cl,&kad]()
 				{
 				//接收用户输入命令线程
 				QLOG_INFO()<<"Usege: ";
@@ -171,6 +172,12 @@ int main(int argc, char *argv[])
 				break;
 				case '1':
 				kad->dump(1);
+				break;
+				case '3':
+				cl.randomNbytes(id.data(), ID_LENGTH);
+				QLOG_INFO()<<"search id = ";
+				id.printNodeId();
+				net.startSearch(id);
 				break;
 				case '\n':
 					break;
