@@ -102,13 +102,13 @@ private:
 //! in the log output.
 #define QLOG_INFO()\
     if (QsLogging::Logger::instance().loggingLevel() > QsLogging::InfoLevel) {} \
-    else QsLogging::Logger::Helper(QsLogging::InfoLevel).stream() << __FILE__ << '@' << __LINE__
+    else QsLogging::Logger::Helper(QsLogging::InfoLevel).stream() //<< __FILE__ << '@' << __LINE__
 #define QLOG_WARN()  \
     if (QsLogging::Logger::instance().loggingLevel() > QsLogging::WarnLevel) {} \
-    else QsLogging::Logger::Helper(QsLogging::WarnLevel).stream() << __FILE__ << '@' << __LINE__
+    else QsLogging::Logger::Helper(QsLogging::WarnLevel).stream() //<< __FILE__ << '@' << __LINE__
 #define QLOG_ERROR() \
     if (QsLogging::Logger::instance().loggingLevel() > QsLogging::ErrorLevel) {} \
-    else QsLogging::Logger::Helper(QsLogging::ErrorLevel).stream() << __FILE__ << '@' << __LINE__
+    else QsLogging::Logger::Helper(QsLogging::ErrorLevel).stream() //<< __FILE__ << '@' << __LINE__
 
 
 #ifdef QS_LOG_DISABLE

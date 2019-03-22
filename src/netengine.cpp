@@ -18,6 +18,8 @@ NetEngine::NetEngine(const NodeId _id,Sp<Bucket>_kad,const bool _isServer):self(
     srch = std::make_shared<Search> (kad);
     sendSearchNode = [&](Sp<Node> &dstNode, NodeId tId)
     {
+        QLOG_WARN()<<"send for search to Node:";
+        dstNode->getId().printNodeId();
         char sbuf[1024]="";
         config::search searchNode;
         searchNode.set_isid(true);
@@ -25,7 +27,10 @@ NetEngine::NetEngine(const NodeId _id,Sp<Bucket>_kad,const bool _isServer):self(
         msgPack sendMsg(self.getId());
         int msg_len = sendMsg.pack(config::MsgType::GET_DATA, &searchNode, sbuf, sizeof(sbuf));//只传ID去
         if(msg_len < 0)
+        {
+            QLOG_ERROR()<<"SendSearchNode msglen error";
             return ;
+        }
         UDT::sendmsg(dstNode->getSock(), sbuf, msg_len);
     };
 }
@@ -50,7 +55,7 @@ void NetEngine::startServer()
     }
     isServer = true;
     server_thread_flag = true;
-    //服务器线程(后期可能改为单独进程),当节点有成为服务器节点的可能时，启动此线程
+    //server thread .if the node is srv,run this thread.
     server = std::thread( [&]()
     {
         UDTSOCKET srv = UDT::socket(AF_INET, SOCK_DGRAM, 0);
@@ -61,7 +66,7 @@ void NetEngine::startServer()
         int ret = 0;
         std::set<UDTSOCKET> readfds;
         std::set<UDTSOCKET> errfds;
-        event = UDT_EPOLL_IN|UDT_EPOLL_ERR;//可读|错误
+        event = UDT_EPOLL_IN|UDT_EPOLL_ERR;//Readable|Error
 
         int sock_len = sizeof(struct sockaddr);
         struct sockaddr_in srv_addr, client;
@@ -76,31 +81,31 @@ void NetEngine::startServer()
             return ;
         }
 
-        if(UDT::listen(srv, 10000) < 0)//等待连接队列的最大长度。
+        if(UDT::listen(srv, 10000) < 0)
         {
             QLOG_ERROR()<<"UDT listen server error"<<UDT::getlasterror().getErrorMessage();
             return ;
         }
-        UDT::epoll_add_usock(epollFd, srv, &event);//添加一个UDT套接字到epoll
-        while(server_thread_flag)//初始化时已为true//循环
+        UDT::epoll_add_usock(epollFd, srv, &event);
+        while(server_thread_flag)
         {
-            //这个wait只会监听srv这个socket以及由socket返回的客户端的socket;
-            ret = UDT::epoll_wait(epollFd, &readfds, nullptr, &errfds, 5*1000);//阻塞，处理发生的所有事件，存入readfds中
+            //the wait only listen srv's socket and its return of client's socket
+            ret = UDT::epoll_wait(epollFd, &readfds, nullptr, &errfds, 5*1000);
 
-            if(ret < 0)//返回值－1出错，0超时，正常返回值是fd就绪的个数
+            if(ret < 0)
             {
                 QLOG_ERROR()<<"UDT epoll_wait error"<<UDT::getlasterror().getErrorMessage();
                 return ;
             }
             else if(ret == 0)
                 continue;
-            for(auto& sock:errfds)//心跳失败
+            for(auto& sock:errfds)//Heartbeat fail!
             {
-                //错误
+                //Error
                 int state=0;
                 int len = sizeof(state);
-                UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);//用于获取任意类型、任意状态套接口的选项当前值，并把结果存入optval
-                //对服务器来说没有CONNECTING状态，因为它不会去主动连接
+                UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);
+                //the srv has no state = CONNECTING ,as it should not connect.
                 if(CLOSED == state || BROKEN == state )
                 {
                     QLOG_INFO()<<"client disconnected";
@@ -109,9 +114,9 @@ void NetEngine::startServer()
                     setNodeExpired(sock,true);
                 }
             }
-            for(auto& sock:readfds)//可读，有消息发来
+            for(auto& sock:readfds)//readable ,have msg come
             {
-                if(sock == srv) //客户端连接成功
+                if(sock == srv) //client connects success!
                 {
                     if((cli = UDT::accept(srv, (struct sockaddr*)&client, &sock_len)) < 0)
                     {
@@ -126,11 +131,11 @@ void NetEngine::startServer()
                 }
                 else
                 {
-                    //客户端发消息过来
+                    //msg of client
                     int state=0;
                     int len = sizeof(state);
                     UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);//shut down
-                    //对服务器来说没有CONNECTING状态，因为它不会去主动连接
+                    //the srv has no state = CONNECTING ,as it should not connect.
                     if(CLOSED == state || BROKEN == state )
                     {
                         QLOG_INFO()<<"client disconnected";
@@ -139,7 +144,7 @@ void NetEngine::startServer()
                         setNodeExpired(sock,true);
                         continue;
                     }
-                    //接收并解析消息
+                    //recieve and handle msg
                     handleMsg(sock) ;
                 }
             }
@@ -698,7 +703,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
 
 int NetEngine::startPunch(int& epollFd, uint32_t ip, uint16_t port)//对端的IP和PORT
 {
-    UDTSOCKET sock = UDT::socket(AF_INET, SOCK_STREAM, 0);
+    UDTSOCKET sock = UDT::socket(AF_INET, SOCK_DGRAM, 0);
     if(UDT::INVALID_SOCK == sock)
     {
         QLOG_ERROR()<<"create new UDT sock error: "<<UDT::getlasterror_desc();

@@ -101,7 +101,7 @@ int Search::dhtSearch(NodeId tid, std::function<void (NodeId, Node &snode)> call
         if(!addSearchNode(n,tid))
             return -1;
     }
-    searchStep(it,send);
+    searchStep(tid,send);
     return 0;
 }
 void Search::searchStep(NodeId &tid,Bucket::sendNode send,int m)
@@ -147,7 +147,6 @@ void Search::searchStep(const Searches::iterator &sr,Bucket::sendNode send,int m
                 break;
         }
     }
-    QLOG_INFO()<<"send the id to "<<j<<" ids";
     sr->step_time = clock::now();
     sr->done = false;
     return;
