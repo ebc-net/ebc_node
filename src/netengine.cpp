@@ -304,7 +304,8 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
                 if(CLOSED == state || BROKEN == state || CONNECTING == state)
                 {
                     UDT::epoll_remove_usock(epollFd, sock);
-                    QLOG_ERROR()<<"client connect error";
+                    QLOG_ERROR()<<"client connect error, ID is :";
+                    sockNodePair[sock]->getId().printNodeId(true);
 
                     UDT::close(sock);
                     //失效
@@ -343,6 +344,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
 
                 UDT::sendmsg(dstNode->getSock(), buf, msg_len);
             };
+
             if(clock::now() >= maintenanceTime)
             {
                 if( kad->bucketMaintenance( sendFindNode,false ))//neighbour=false 桶维护
@@ -357,6 +359,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
                     if(kad->grow_time >= clock::now() - seconds(150))//mybucket分裂后150s再扩桶
                     {
                         kad->bucketMaintenance(sendFindNode,true);//扩
+                        QLOG_INFO()<<"send get_node for self maintenance";
                     }
                 }
             }
@@ -503,13 +506,15 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
 
             //开始查找节点并发送打洞信息
             NodeId targetId(msg.nodes().ebcnodes(0).id());
-            NodeId srcId(msg.src_id());
+
             //此处需要修改，查找当间cli_id所在桶的所有节点
             auto targetnodes = kad->findClosestNodes(targetId,8);
             for (auto &node:targetnodes)
             {
-                if(node->getId() == srcId)
+                //filter sender node in the reply list
+                if(node->getId()== NodeId(msg.src_id()))
                     continue;
+
                 auto tmp = nodes.add_ebcnodes();
                 tmp->set_id(&node->getId(),ID_LENGTH);
                 tmp->set_ip(node->getAddr().getIPv4().sin_addr.s_addr);
@@ -583,6 +588,11 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
             for(int i=0; i<node_count; ++i)
             {
                 node = nodes.ebcnodes(i);
+
+                //filter self node in reply
+                if(NodeId(node.id()) == self.getId())
+                    continue;
+
                 //开始UDT的打洞
                 UDTSOCKET sock = UDT::INVALID_SOCK;
                 NodeId tId{node.id()};
