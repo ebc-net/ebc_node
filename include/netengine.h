@@ -29,7 +29,8 @@ private:
     void setUdtOpt(const UDTSOCKET &sock);   //设置socket的非阻塞以及发送/接收缓冲器的大小
     void handleMsg(UDTSOCKET, int epllFd = 0);
     int startPunch(int&,uint32_t ip, uint16_t port);
-    void appendBucket(const Sp<Node> &node);
+    //void appendBucket(const Sp<Node> &node);
+    bool appendBucket(const Sp<Node> &node);
     void setNodeExpired(const UDTSOCKET& sock,bool isServer = false);
 
     Node self;   //本节点的信息
@@ -47,6 +48,7 @@ private:
     sockaddr_in local_addr ;
     time_point maintenanceTime;
     time_point searchTime;
+    time_point expireTime;
     char buf[6*1024]="";
     std::function<void(Sp<Node> &dstNode, NodeId tId)> sendSearchNode;
 };

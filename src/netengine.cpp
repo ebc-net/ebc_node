@@ -48,6 +48,7 @@ NetEngine::~NetEngine()
 
 void NetEngine::startServer()
 {
+    expireTime =clock::now() + seconds(300);
     if(self.getId().empty())
     {
         QLOG_ERROR()<<"Server net start fail: Id is empty";
@@ -112,6 +113,7 @@ void NetEngine::startServer()
                     UDT::epoll_remove_usock(epollFd, sock);
                     UDT::close(sock);
                     setNodeExpired(sock,true);
+                    sockNodePairSrv.erase(sock);
                 }
             }
             for(auto& sock:readfds)//readable ,have msg come
@@ -142,11 +144,18 @@ void NetEngine::startServer()
                         UDT::epoll_remove_usock(epollFd, sock);
                         UDT::close(sock);
                         setNodeExpired(sock,true);
+                        sockNodePairSrv.erase(sock);
                         continue;
                     }
                     //recieve and handle msg
                     handleMsg(sock) ;
                 }
+            }
+
+            if(clock::now() >= expireTime)
+            {
+                kad->expireBucket();
+                expireTime = clock::now() + seconds(300);
             }
         }
     }
@@ -158,7 +167,6 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
 {
     maintenanceTime = clock::now();
     searchTime = clock::now();
-
     boot_sock = UDT::socket(AF_INET, SOCK_DGRAM, 0);
     if(boot_sock < 0)
     {
@@ -273,14 +281,19 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
                 {
                     //连接对端节点成功，则将改节点的socket记录,将此节点加入K桶
                     QLOG_INFO()<<"peer node connect success!";
-                    Sp<Node>& node = sockNodePair[sock];////记录UDT套接字与节点ID的对应关系，方便通过UDTSOCKET快速找到ID
+                    Sp<Node>& node = sockNodePair[sock];//记录UDT套接字与节点ID的对应关系，方便通过UDTSOCKET快速找到ID
                     auto tid = idTidPair.find(node->getId());
                     if(tid != idTidPair.end())
                     {
                         srch->addSearchNode(node, tid->second);
                         srch->searchStep(tid->second, sendSearchNode,1);
                     }
-                    appendBucket(node);//打洞成功的节点加入本地（客户端的）K桶简化
+                    if(!appendBucket(node))//if appendBucket failed,close the sock and remove it.
+                    {
+                        UDT::epoll_remove_usock(epollFd, sock);
+                        UDT::close(sock);
+                        sockNodePair.erase(sock);
+                    }
                 }
             }
             /*有消息达到*/
@@ -353,7 +366,6 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
         }
     });
     boot_thread.detach();
-
 }
 
 void NetEngine::startSearch(NodeId tId)
@@ -458,9 +470,11 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
             //开始查找节点并发送打洞信息
             NodeId cli_id(msg.src_id());
             std::list<Sp<Node>> sendnodes = kad->repNodes(cli_id);
-			QLOG_WARN()<<"rep node num= "<<sendnodes.size();
-            for (auto &node:sendnodes)
+            QLOG_WARN()<<"rep node num= "<<sendnodes.size();
+            for(auto &node:sendnodes)
             {
+                //                if(node->getId()== cli_id)
+                //                    continue;
                 auto tmp = nodes.add_ebcnodes();
                 tmp->set_id(&node->getId(),ID_LENGTH);
                 tmp->set_ip(node->getAddr().getIPv4().sin_addr.s_addr);
@@ -492,6 +506,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
 
             //开始查找节点并发送打洞信息
             NodeId targetId(msg.nodes().ebcnodes(0).id());
+
             //此处需要修改，查找当间cli_id所在桶的所有节点
             auto targetnodes = kad->findClosestNodes(targetId,8);
             for (auto &node:targetnodes)
@@ -586,6 +601,8 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                 //开始UDT的打洞
                 UDTSOCKET sock = UDT::INVALID_SOCK;
                 NodeId tId{node.id()};
+                if(tId == self.getId())
+                    continue;
                 if(kad->findNode(tId))
                 {
                     if(!kad->getNode(tId)->isExpired())
@@ -755,9 +772,10 @@ int NetEngine::startPunch(int& epollFd, uint32_t ip, uint16_t port)//对端的IP
     return sock;
 }
 //加服务器K桶
-void NetEngine::appendBucket(const Sp<Node> &node)
+//void NetEngine::appendBucket(const Sp<Node> &node)
+bool NetEngine::appendBucket(const Sp<Node> &node)
 {
-    kad->onNewNode(node,2,isServer);
+    return kad->onNewNode(node,2,isServer);//judge if appendbucket success
 }
 
 void NetEngine::setNodeExpired(const UDTSOCKET &sock,bool isServer)
