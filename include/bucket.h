@@ -45,6 +45,7 @@ public:
     bool bucketMaintenance(sendNode,bool neighbour = true);//用neighbour = true 扩桶，neighbour = false 桶维护
     bool split(const Kbucket::iterator &b);
     void closeBucket(destoryNet d);
+    void expireBucket();
     void dump(int type = 0) const;
 
 private:    

@@ -151,7 +151,7 @@ bool Bucket::onNewNode(const Sp<Node>& node, int confirm, bool isServer)
             }
         }
 
-        int dNum = isServer?11:1;
+        int dNum = isServer?11:6;
         if (mybucket || depth(b) < dNum) {
             split(b);
             return onNewNode(node, confirm);
@@ -191,11 +191,8 @@ Sp<Node> Bucket::getNode(const NodeId &id)
     return nullptr;
 }
 
-
-
 bool Bucket::bucketMaintenance(sendNode sendFindNode, bool neighbour)
 {
-    int goodNode = 0;
     Kbucket::iterator q;
     if(!neighbour)
         q = buckets.begin();
@@ -204,6 +201,9 @@ bool Bucket::bucketMaintenance(sendNode sendFindNode, bool neighbour)
     Sp<Node> dstNode{};
     while ( q != buckets.end())
     {
+        dstNode.reset();//bug
+        int goodNode = 0;
+        int badNode = 0 ;
         if(q->nodes.empty())
         {
             q = std::next(q);
@@ -218,8 +218,9 @@ bool Bucket::bucketMaintenance(sendNode sendFindNode, bool neighbour)
                 dstNode = n;
             }
         }
+        badNode = q->nodes.size() - goodNode;//bug
 
-        if(!neighbour && goodNode < 3 && goodNode >0 )
+        if(!neighbour && (badNode >goodNode )&&goodNode > 0)//bug
         {
             sendFindNode(dstNode, randomId(q));
             return true;
@@ -239,16 +240,16 @@ bool Bucket::bucketMaintenance(sendNode sendFindNode, bool neighbour)
                 auto it = std::find_if(b.nodes.begin(), b.nodes.end(), [&](Sp<Node>& node)
                 {
                         if(!node->isExpired())
-                        {
-                            if(!neighbour)
-                               sendFindNode(node, randomId(q));
-                            else
-                               sendFindNode(node, selfId);
-                            return true;
-                         }
+                {
+                        if(!neighbour)
+                        sendFindNode(node, randomId(q));
+                        else
+                        sendFindNode(node, selfId);
+                        return true;
+            }
                         return false;
-                }
-                );
+            }
+                        );
 
                 if(it != b.nodes.end())
                     return true;
@@ -280,33 +281,85 @@ bool Bucket::bucketMaintenance(sendNode sendFindNode, bool neighbour)
     return false;
 }
 
-//服务器还给客户的ID表
-std::list<Sp<Node> > Bucket::repNodes(const NodeId &id)//服务器REP节点的96个节点
+/*****     服务器还给客户的ID表的改进方法（使得返回的ID更分散）     *****/
+/*****这是一个很难看懂的函数，写的也是很完美，恩，不需要注释了，注释了也看不懂*****/
+std::list<Sp<Node>> Bucket::repNodes(const NodeId &id)
 {
-    std::list<Sp<Node>> returNodes;
+    std::list<Sp<Node>> returnNodes;
     auto it = findBucket(id);
-    int bit = depth(it) - 1;
-    for (auto n:it->nodes)
-    {
-        if(!n->isExpired())
-            returNodes.push_back(n);
-    }
+    static int bit = depth(it) - 1;
     NodeId id_first = it->first;
-
-    for( ;bit >= 0; bit--)
+    auto insertNodes = [&](int k,NodeId id)
     {
-        int i = bit/8;
-        int j = bit%8;
-        id_first[i] ^= (0x80 >> j);//closest
-        auto it = findBucket(id_first);
-        for (auto n:it->nodes)
+        auto it = findBucket(id);
+        if(it->first != id)
         {
-            if(!n->isExpired())
-                returNodes.push_back(n);
+            return 0;
         }
-        id_first[i] &= (0xfe <<(7 - j));
+        int insertNumber = 0;
+        for(auto &n : it->nodes)
+        {
+            if(1)
+            {
+                returnNodes.push_back(n);
+                insertNumber ++;
+                if(--k <= 0)
+                    break;
+            }
+        }
+        return insertNumber;
+    };
+    int k = 8;
+    bool kIs1 = false;
+    insertNodes(k,it->first);
+    for (;  bit >= 0 ; bit--)
+    {
+        int num = 0;
+        auto insertOther = [&,insertNodes](int i)
+        {
+            id_first[(bit + i) / 8] ^= (0x80 >> ((bit + i) % 8));
+            id_first.printNodeId();
+            auto thisNum = insertNodes(k, id_first);
+            num += thisNum;
+            return thisNum;
+        };
+        auto insertOtherOne = [&,insertOther](int i)
+        {
+            auto tmp = insertOther(i);
+            if(kIs1 && !tmp)
+            {
+                insertOther(4);
+                id_first[(bit + 4) / 8] ^= (0x80 >> ((bit + 4) % 8));
+            }
+        };
+        insertOther(0);
+
+        if(k < 8)
+        {
+            insertOther(1);
+
+            if(k < 4)
+            {
+                insertOther(2);
+                insertOther(1);
+                if(k < 2)
+                {
+                    insertOtherOne(3);
+                    insertOtherOne(2);
+                    insertOtherOne(1);
+                    insertOtherOne(2);
+                    kIs1 = true;
+                }
+
+            }
+        }
+        id_first[bit / 8] &= (0xfe << (7 - bit % 8));
+        id_first[bit / 8 + 1] = 0x00;
+        id_first.printNodeId();
+        if(k > 1)
+            k /= 2;
     }
-    return returNodes;
+    return returnNodes;
 }
 
 bool Bucket::split(const Kbucket::iterator &b)
@@ -326,7 +379,8 @@ bool Bucket::split(const Kbucket::iterator &b)
     // Re-assign nodes重新分派节点
     std::list<Sp<Node>> nodes {};//std::shared_ptr<T>;
     nodes.splice(nodes.begin(), b->nodes);
-    while (!nodes.empty()) {
+    while (!nodes.empty())
+    {
         auto n = nodes.begin();
         auto b = findBucket((*n)->getId());
         if (b == buckets.end())
@@ -346,6 +400,20 @@ void Bucket::closeBucket(Bucket::destoryNet d)
             d(n->getSock());
         }
     }
+}
+
+void Bucket::expireBucket()
+{
+    for(auto b = buckets.begin(); b != buckets.end(); b++)
+    {
+        for(auto it = b->nodes.begin(); it != b->nodes.end();)
+        {
+            auto itt = it++;
+            if((*itt)->isExpired())
+                b->nodes.erase(itt);
+        }
+    }
+    QLOG_INFO()<<"expired check finished!";
 }
 
 bool Bucket::isEmpty() const
@@ -386,7 +454,6 @@ void Bucket::dump(int type) const
         QLOG_INFO()<<"bucket num = "<<buckets.size();
         QLOG_INFO()<<"total node num = "<<sum;
         QLOG_INFO()<<"Good nodes num = "<<good_sum;
-
     }
 }
 

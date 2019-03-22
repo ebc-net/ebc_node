@@ -79,7 +79,6 @@ int Search::dhtSearch(NodeId tid, std::function<void (NodeId, Node &snode)> call
         it->done = 0;
         it->step_time = clock::now();
 
-
         for(auto iter = it->searchNodes.begin();iter!= it->searchNodes.end();)
         {
             if(iter->node->isExpired())
@@ -92,16 +91,15 @@ int Search::dhtSearch(NodeId tid, std::function<void (NodeId, Node &snode)> call
             iter->requestTime = time_point ::min();
             iter++;
         }
-
     }
 
     auto nodes = kad->findClosestNodes(tid,8);
-	QLOG_WARN()<<"find closest node : ";
+    QLOG_WARN()<<"find closest node : ";
     for(auto &n :nodes)
     {
         if(!addSearchNode(n,tid))
             return -1;
-		n->getId().printNodeId();
+        n->getId().printNodeId();
     }
     searchStep(tid,send);
     return 0;
