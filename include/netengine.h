@@ -32,6 +32,7 @@ private:
     //void appendBucket(const Sp<Node> &node);
     bool appendBucket(const Sp<Node> &node);
     void setNodeExpired(const UDTSOCKET& sock,bool isServer = false);
+    void eraseNodeExpired(const UDTSOCKET& sock,bool isServer = false);
 
     Node self;   //本节点的信息
     Sp<Bucket> kad;//服务器或是客户机的K桶

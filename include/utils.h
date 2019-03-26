@@ -14,7 +14,7 @@ namespace  NET
 #define NODE_PORT  (9443)
 #define SRV_PORT   (9444)
 #define ID_LENGTH  (20)
-#define MAX_NODE   (3)
+#define MAX_NODE   (8)
 #define MAX_SEARCH_NODE  (14)
 #define comPortNat(port,nat)  (((port)<<(16)) | ((nat)&(0xf)<<(12)))
 #define parPort(value)        (((value)&(0xffff0000))>>16)

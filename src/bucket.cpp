@@ -284,87 +284,168 @@ bool Bucket::bucketMaintenance(sendNode sendFindNode, bool neighbour)
     return false;
 }
 
-/*****     服务器还给客户的ID表的改进方法（使得返回的ID更分散）     *****/
-/*****这是一个很难看懂的函数，写的也是很完美，恩，不需要注释了，注释了也看不懂*****/
+///*****     服务器还给客户的ID表的改进方法（使得返回的ID更分散）     *****/
+///*****这是一个很难看懂的函数，写的也是很完美，恩，不需要注释了，注释了也看不懂*****/
+//std::list<Sp<Node>> Bucket::repNodes(const NodeId &id)
+//{
+//    std::list<Sp<Node>> returnNodes;
+//    auto it = findBucket(id);
+//    static int bit = depth(it) - 1;
+//    NodeId id_first = it->first;
+//    auto insertNodes = [&](int k,NodeId id)
+//    {
+//        auto it = findBucket(id);
+//        if(it->first != id)
+//        {
+//            return 0;
+//        }
+//        int insertNumber = 0;
+//        for(auto &n : it->nodes)
+//        {
+//            if(!n->isExpired())
+//            {
+//                returnNodes.push_back(n);
+//                insertNumber ++;
+//                if(--k <= 0)
+//                    break;
+//            }
+//        }
+//        return insertNumber;
+//    };
+//    int k = 8;
+//    bool kIs1 = false;
+//    insertNodes(k,it->first);
+//    for (;  bit >= 0 ; bit--)
+//    {
+//        int num = 0;
+//        auto insertOther = [&,insertNodes](int i)
+//        {
+//            id_first[(bit + i) / 8] ^= (0x80 >> ((bit + i) % 8));
+//            auto thisNum = insertNodes(k, id_first);
+//            num += thisNum;
+//            return thisNum;
+//        };
+//        auto insertOtherOne = [&,insertOther](int i)
+//        {
+//            auto tmp = insertOther(i);
+//            if(kIs1 && !tmp)
+//            {
+//                insertOther(4);
+//                id_first[(bit + 4) / 8] ^= (0x80 >> ((bit + 4) % 8));
+//            }
+//        };
+//        insertOther(0);
+
+//        if(k < 8)
+//        {
+//            insertOther(1);
+
+//            if(k < 4)
+//            {
+//                insertOther(2);
+//                insertOther(1);
+//                if(k < 2)
+//                {
+//                    insertOtherOne(3);
+//                    insertOtherOne(2);
+//                    insertOtherOne(1);
+//                    insertOtherOne(2);
+//                    kIs1 = true;
+//                }
+
+//            }
+//        }
+//        id_first[bit / 8] &= (0xfe << (7 - bit % 8));
+//        id_first[bit / 8 + 1] = 0x00;
+//        if(k > 1)
+//            k /= 2;
+//    }
+//    QLOG_WARN()<<"srv repnodes number:"<<returnNodes.size();
+//    return returnNodes;
+//}
+//xxn测试
 std::list<Sp<Node>> Bucket::repNodes(const NodeId &id)
 {
-    std::list<Sp<Node>> returnNodes;
-    auto it = findBucket(id);
-    static int bit = depth(it) - 1;
-    NodeId id_first = it->first;
-    auto insertNodes = [&](int k,NodeId id)
+    std::list<Sp<Node>> returnNodes{};
+    if (bucketIsEmpty(id))
     {
-        auto it = findBucket(id);
-        if(it->first != id)
-        {
-            return 0;
-        }
-        int insertNumber = 0;
-        for(auto &n : it->nodes)
-        {
-            if(1)
-            {
-                returnNodes.push_back(n);
-                insertNumber ++;
-                if(--k <= 0)
-                    break;
-            }
-        }
-        return insertNumber;
-    };
-    int k = 8;
-    bool kIs1 = false;
-    insertNodes(k,it->first);
-    for (;  bit >= 0 ; bit--)
-    {
-        int num = 0;
-        auto insertOther = [&,insertNodes](int i)
-        {
-            id_first[(bit + i) / 8] ^= (0x80 >> ((bit + i) % 8));
-            id_first.printNodeId();
-            auto thisNum = insertNodes(k, id_first);
-            num += thisNum;
-            return thisNum;
-        };
-        auto insertOtherOne = [&,insertOther](int i)
-        {
-            auto tmp = insertOther(i);
-            if(kIs1 && !tmp)
-            {
-                insertOther(4);
-                id_first[(bit + 4) / 8] ^= (0x80 >> ((bit + 4) % 8));
-            }
-        };
-        insertOther(0);
-
-        if(k < 8)
-        {
-            insertOther(1);
-
-            if(k < 4)
-            {
-                insertOther(2);
-                insertOther(1);
-                if(k < 2)
-                {
-                    insertOtherOne(3);
-                    insertOtherOne(2);
-                    insertOtherOne(1);
-                    insertOtherOne(2);
-                    kIs1 = true;
-                }
-
-            }
-        }
-        id_first[bit / 8] &= (0xfe << (7 - bit % 8));
-        id_first[bit / 8 + 1] = 0x00;
-        id_first.printNodeId();
-        if(k > 1)
-            k /= 2;
+        return returnNodes;
     }
+        auto it = findBucket(id);
+        static int bit = depth(it) - 1;
+        NodeId id_first = it->first;
+        auto insertNodes = [&](int k,NodeId id)
+        {
+            auto it = findBucket(id);
+            if(it->first != id)
+            {
+                return 0;
+            }
+            int insertNumber = 0;
+            for(auto &n : it->nodes)
+            {
+                if(!n->isExpired())
+                {
+                    returnNodes.push_back(n);
+                    insertNumber ++;
+                    if(--k <= 0)
+                        break;
+                }
+            }
+            return insertNumber;
+        };
+        int k = 8;
+        bool kIs1 = false;
+        insertNodes(k,it->first);
+        for (;  bit >= 0 ; bit--)
+        {
+            int num = 0;
+            auto insertOther = [&,insertNodes](int i)
+            {
+                id_first[(bit + i) / 8] ^= (0x80 >> ((bit + i) % 8));
+                auto thisNum = insertNodes(k, id_first);
+                num += thisNum;
+                return thisNum;
+            };
+            auto insertOtherOne = [&,insertOther](int i)
+            {
+                auto tmp = insertOther(i);
+                if(kIs1 && !tmp)
+                {
+                    insertOther(4);
+                    id_first[(bit + 4) / 8] ^= (0x80 >> ((bit + 4) % 8));
+                }
+            };
+            insertOther(0);
+
+            if(k < 8)
+            {
+                insertOther(1);
+
+                if(k < 4)
+                {
+                    insertOther(2);
+                    insertOther(1);
+                    if(k < 2)
+                    {
+                        insertOtherOne(3);
+                        insertOtherOne(2);
+                        insertOtherOne(1);
+                        insertOtherOne(2);
+                        kIs1 = true;
+                    }
+
+                }
+            }
+            id_first[bit / 8] &= (0xfe << (7 - bit % 8));
+            id_first[bit / 8 + 1] = 0x00;
+            if(k > 1)
+                k /= 2;
+        }
+        QLOG_WARN()<<"srv repnodes number:"<<returnNodes.size();
+
     return returnNodes;
 }
-
 bool Bucket::split(const Kbucket::iterator &b)
 {
     NodeId new_first_id;
@@ -424,20 +505,32 @@ bool Bucket::isEmpty() const
     return buckets.empty();
 }
 
+bool Bucket::bucketIsEmpty(NodeId id)
+{
+    return (buckets.size()==1) && (findBucket(id)->nodes.size()==0) ;
+}
+
 void Bucket::dump(int type) const
 {
     if(type == 0)//ALL
     {
+        int i = 1,j = 0;
+        QLOG_ERROR()<<"self id is:";
+        selfId.printNodeId();
+        QLOG_ERROR()<<"New table";
         for(auto& b: buckets)
         {
-            QLOG_WARN()<<"bucket size= "<<b.nodes.size();
+            QLOG_WARN()<<"NO."<<i++<<" bucket size= "<<b.nodes.size();
             b.first.printNodeId();
             for(auto& n: b.nodes)
             {
                 n->getId().printNodeId(n->isExpired());
+                if(!n->isExpired())
+                    j+=1;
             }
         }
         QLOG_WARN()<<"k-bucket num = "<<buckets.size();
+        QLOG_WARN()<<"good nodes number = "<<j;
     }
     else if(type == 1)//节点
     {

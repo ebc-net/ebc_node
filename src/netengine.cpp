@@ -18,12 +18,10 @@ NetEngine::NetEngine(const NodeId _id,Sp<Bucket>_kad,const bool _isServer):self(
     srch = std::make_shared<Search> (kad);
     sendSearchNode = [&](Sp<Node> &dstNode, NodeId tId)
     {
-        QLOG_WARN()<<"send for search to Node:";
-        dstNode->getId().printNodeId();
         char sbuf[1024]="";
         config::search searchNode;
         searchNode.set_isid(true);
-        searchNode.set_tid(tId.toString());
+        searchNode.set_tid(&tId,ID_LENGTH);
         msgPack sendMsg(self.getId());
         int msg_len = sendMsg.pack(config::MsgType::GET_DATA, &searchNode, sbuf, sizeof(sbuf));//只传ID去
         if(msg_len < 0)
@@ -98,45 +96,14 @@ void NetEngine::startServer()
                 QLOG_ERROR()<<"UDT epoll_wait error"<<UDT::getlasterror().getErrorMessage();
                 return ;
             }
-            else if(ret == 0)
-                continue;
-            for(auto& sock:errfds)//Heartbeat fail!
+            else if(ret > 0)
             {
-                //Error
-                int state=0;
-                int len = sizeof(state);
-                UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);
-                //the srv has no state = CONNECTING ,as it should not connect.
-                if(CLOSED == state || BROKEN == state )
+                for(auto& sock:errfds)//Heartbeat fail!
                 {
-                    QLOG_INFO()<<"client disconnected";
-                    UDT::epoll_remove_usock(epollFd, sock);
-                    UDT::close(sock);
-                    setNodeExpired(sock,true);
-                    sockNodePairSrv.erase(sock);
-                }
-            }
-            for(auto& sock:readfds)//readable ,have msg come
-            {
-                if(sock == srv) //client connects success!
-                {
-                    if((cli = UDT::accept(srv, (struct sockaddr*)&client, &sock_len)) < 0)
-                    {
-                        QLOG_ERROR()<<"UDT accept error"<<UDT::getlasterror().getErrorMessage();
-                        continue;
-                    }
-
-                    QLOG_INFO()<<"peer info:"<<inet_ntoa(client.sin_addr)<<"@"<<ntohs(client.sin_port);
-                    QLOG_INFO()<<"cli = "<<cli;
-                    //这里要不要设置cli这个socket的属性，还是说cli会继承srv套接字的属性
-                    UDT::epoll_add_usock(epollFd, cli, &event);
-                }
-                else
-                {
-                    //msg of client
+                    //Error
                     int state=0;
                     int len = sizeof(state);
-                    UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);//shut down
+                    UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);
                     //the srv has no state = CONNECTING ,as it should not connect.
                     if(CLOSED == state || BROKEN == state )
                     {
@@ -144,17 +111,49 @@ void NetEngine::startServer()
                         UDT::epoll_remove_usock(epollFd, sock);
                         UDT::close(sock);
                         setNodeExpired(sock,true);
-                        sockNodePairSrv.erase(sock);
-                        continue;
+                        eraseNodeExpired(sock,true);
                     }
-                    //recieve and handle msg
-                    handleMsg(sock) ;
+                }
+                for(auto& sock:readfds)//readable ,have msg come
+                {
+                    if(sock == srv) //client connects success!
+                    {
+                        if((cli = UDT::accept(srv, (struct sockaddr*)&client, &sock_len)) < 0)
+                        {
+                            QLOG_ERROR()<<"UDT accept error"<<UDT::getlasterror().getErrorMessage();
+                            continue;
+                        }
+
+                        QLOG_INFO()<<"peer info:"<<inet_ntoa(client.sin_addr)<<"@"<<ntohs(client.sin_port);
+                        QLOG_INFO()<<"cli = "<<cli;
+                        //这里要不要设置cli这个socket的属性，还是说cli会继承srv套接字的属性
+                        UDT::epoll_add_usock(epollFd, cli, &event);
+                    }
+                    else
+                    {
+                        //msg of client
+                        int state=0;
+                        int len = sizeof(state);
+                        UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);//shut down
+                        //the srv has no state = CONNECTING ,as it should not connect.
+                        if(CLOSED == state || BROKEN == state )
+                        {
+                            QLOG_INFO()<<"client disconnected";
+                            UDT::epoll_remove_usock(epollFd, sock);
+                            UDT::close(sock);
+                            setNodeExpired(sock,true);
+                            eraseNodeExpired(sock,true);
+                            continue;
+                        }
+                        //recieve and handle msg
+                        handleMsg(sock) ;
+                    }
                 }
             }
 
             if(clock::now() >= expireTime)
             {
-                kad->expireBucket();
+                kad->expireBucket();//删掉节点
                 expireTime = clock::now() + seconds(300);
             }
         }
@@ -230,90 +229,95 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
                 QLOG_ERROR()<<"UDT epoll_wait error"<<UDT::getlasterror().getErrorMessage();
                 return ;
             }
+            else if(ret > 0)
+            {
 
-            for(auto& sock:errfds)
-            {
-                // UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);
-                //QLOG_INFO()<<"in errfds state = "<<state;
-                UDT::epoll_remove_usock(epollFd, sock);
-                if(sock == boot_sock)
+                for(auto& sock:errfds)
                 {
-                    //如果是服务器连接失败，则做重连动作  TODO
-                    //UDT有问题，不能连续连接 注意一下
-                    QLOG_ERROR()<<"server connect error! re-connecting...";
-                    //此处封装一层，SOCK关掉重连
-                    //if(UDT::connect(boot_sock, (struct sockaddr *)&srv_addr, sizeof(srv_addr)) < 0)
-                    //{
-                    //	QLOG_ERROR()<<"UDT boot socket connect error"<<UDT::getlasterror().getErrorMessage();
-                    //	return ;
-                    //}
-                    //event = UDT_EPOLL_OUT|UDT_EPOLL_ERR;
-                    //UDT::epoll_add_usock(epollFd, sock, &event);
-                }
-                else
-                {
-                    QLOG_ERROR()<<"peer connect error1";
-                    sockNodePair[sock]->getId().printNodeId(true);
-                    UDT::close(sock);
-                    setNodeExpired(sock);
-                    sockNodePair.erase(sock);
-                }
-            }
-            /*可写，这里表示connect连接状态, 在套接字可写后，获取套接字的状态，根据不同的状态可以知道socket的连接状态*/
-            for(auto& sock:writefds)
-            {
-                event = UDT_EPOLL_IN|UDT_EPOLL_ERR;
-                UDT::epoll_remove_usock(epollFd, sock);
-                UDT::epoll_add_usock(epollFd, sock, &event);
-
-                if(sock == boot_sock) //服务器连接成功
-                {
-                    //发送GET_NODE命令到服务器
-                    config::EbcNode self_node;
-                    self_node.set_port_nat(comPortNat(0, self.getNatType()));
-                    msgPack sendMsg(self.getId());
-                    int msg_len = sendMsg.pack(config::MsgType::GET_NODE, &self_node, buf, sizeof(buf));
-                    if(msg_len < 0)
-                        continue;
-                    UDT::sendmsg(sock, buf, msg_len);
-                }
-                else
-                {
-                    //连接对端节点成功，则将改节点的socket记录,将此节点加入K桶
-                    QLOG_INFO()<<"peer node connect success!";
-                    Sp<Node>& node = sockNodePair[sock];//记录UDT套接字与节点ID的对应关系，方便通过UDTSOCKET快速找到ID
-                    auto tid = idTidPair.find(node->getId());
-                    if(tid != idTidPair.end())
-                    {
-                        srch->addSearchNode(node, tid->second);
-                        srch->searchStep(tid->second, sendSearchNode,1);
-                    }
-                    if(!appendBucket(node))//if appendBucket failed,close the sock and remove it.
-                    {
-                        UDT::epoll_remove_usock(epollFd, sock);
-                        UDT::close(sock);
-                        sockNodePair.erase(sock);
-                    }
-                }
-            }
-            /*有消息达到*/
-            for(auto& sock:readfds)
-            {
-                UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);
-                /*这个时候的失败一般是之前连接上了，但是中间连接断开了*/
-                if(CLOSED == state || BROKEN == state || CONNECTING == state)
-                {
+                    // UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);
+                    //QLOG_INFO()<<"in errfds state = "<<state;
                     UDT::epoll_remove_usock(epollFd, sock);
-                    QLOG_ERROR()<<"client connect error, ID is :";
-                    sockNodePair[sock]->getId().printNodeId(true);
-
-                    UDT::close(sock);
-                    //失效
-                    setNodeExpired(sock);
-                    sockNodePair.erase(sock);
-                    continue;
+                    if(sock == boot_sock)
+                    {
+                        //如果是服务器连接失败，则做重连动作  TODO
+                        //UDT有问题，不能连续连接 注意一下
+                        QLOG_ERROR()<<"server connect error! re-connecting...";
+                        //此处封装一层，SOCK关掉重连
+                        //if(UDT::connect(boot_sock, (struct sockaddr *)&srv_addr, sizeof(srv_addr)) < 0)
+                        //{
+                        //	QLOG_ERROR()<<"UDT boot socket connect error"<<UDT::getlasterror().getErrorMessage();
+                        //	return ;
+                        //}
+                        //event = UDT_EPOLL_OUT|UDT_EPOLL_ERR;
+                        //UDT::epoll_add_usock(epollFd, sock, &event);
+                    }
+                    else
+                    {
+                        QLOG_ERROR()<<"peer connect error1";//此处问题大大的!
+                        sockNodePair[sock]->getId().printNodeId(true);
+                        UDT::close(sock);
+                        setNodeExpired(sock);
+                        eraseNodeExpired(sock);
+                    }
                 }
-                handleMsg(sock, epollFd) ;
+                /*可写，这里表示connect连接状态, 在套接字可写后，获取套接字的状态，根据不同的状态可以知道socket的连接状态*/
+                for(auto& sock:writefds)
+                {
+                    event = UDT_EPOLL_IN|UDT_EPOLL_ERR;
+                    UDT::epoll_remove_usock(epollFd, sock);
+                    UDT::epoll_add_usock(epollFd, sock, &event);
+
+                    if(sock == boot_sock) //服务器连接成功
+                    {
+                        //发送GET_NODE命令到服务器
+                        config::EbcNode self_node;
+                        self_node.set_port_nat(comPortNat(0, self.getNatType()));
+                        msgPack sendMsg(self.getId());
+                        int msg_len = sendMsg.pack(config::MsgType::GET_NODE, &self_node, buf, sizeof(buf));
+                        if(msg_len < 0)
+                            continue;
+                        UDT::sendmsg(sock, buf, msg_len);
+                    }
+                    else
+                    {
+                        //连接对端节点成功，则将改节点的socket记录,将此节点加入K桶
+                        QLOG_INFO()<<"peer node connect success!";
+                        Sp<Node>& node = sockNodePair[sock];//记录UDT套接字与节点ID的对应关系，方便通过UDTSOCKET快速找到ID
+                        auto tid = idTidPair.find(node->getId());
+                        if(tid != idTidPair.end())
+                        {
+                            srch->addSearchNode(node, tid->second);
+                            srch->searchStep(tid->second, sendSearchNode,1);
+                        }
+                        if(!appendBucket(node))//if appendBucket failed,close the sock and remove it.
+                        {
+                            UDT::epoll_remove_usock(epollFd, sock);
+                            UDT::close(sock);
+                            sockNodePair.erase(sock);
+                            QLOG_ERROR()<<"ADD BUCKET FAILED";
+                        }
+                    }
+                }
+                /*有消息达到*/
+                for(auto& sock:readfds)
+                {
+                    UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);
+                    /*这个时候的失败一般是之前连接上了，但是中间连接断开了*/
+                    if(CLOSED == state || BROKEN == state || CONNECTING == state)
+                    {
+                        if(sock == boot_sock)
+                            QLOG_ERROR()<<"Srv is down!";//服务器下线~
+                        UDT::epoll_remove_usock(epollFd, sock);
+                        QLOG_ERROR()<<"client connect error, ID is :";
+                        sockNodePair[sock]->getId().printNodeId(true);
+                        UDT::close(sock);
+                        //失效
+                        setNodeExpired(sock);
+                        eraseNodeExpired(sock);
+                        continue;
+                    }
+                    handleMsg(sock, epollFd) ;
+                }
             }
 
             //search time maintenance
@@ -368,7 +372,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
     boot_thread.detach();
 }
 
-void NetEngine::startSearch(NodeId tId)
+void NetEngine::startSearch(NodeId tId)//传tid进来
 {
     auto callback = [&](NodeId tId, Node &sNode)
     {
@@ -377,7 +381,10 @@ void NetEngine::startSearch(NodeId tId)
         QLOG_WARN()<<"Find in the Node:";
         sNode.getId().printNodeId();
     };
-    srch->dhtSearch(tId,callback,sendSearchNode);
+    if(tId == self.getId())
+        QLOG_WARN()<<"Find the search Node :It is myself Id";
+    else
+        srch->dhtSearch(tId,callback,sendSearchNode);
 }
 
 void NetEngine::setUdtOpt(const UDTSOCKET &sock)//srv
@@ -535,7 +542,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
     case  config::MsgType::GET_DATA :
     {
         config::search datanodes;//返回结果
-        auto msgNode = kad->getNode(msg.src_id());
+        auto msgNode = kad->getNode(msg.src_id());//发送消息的节点
         memset(buf, 0, sizeof(buf));
         config::EbcNode punch_node;
         msgPack send_msg(self.getId());
@@ -560,9 +567,11 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
         }
         else
         {
-            auto targetnodes = kad->findClosestNodes(searchId, 3);
+            auto targetnodes = kad->findClosestNodes(searchId, 3);//查找最近的3个节点回复回去
             for (auto &node:targetnodes)
             {
+                if(node->getId()==msgNode->getId())
+                    continue;//如果找到的id和发送端相同则过滤掉,不能自己给自己打洞.
                 auto tmp = nodes.add_ebcnodes();
                 tmp->set_id(&node->getId(),ID_LENGTH);
                 tmp->set_ip(node->getAddr().getIPv4().sin_addr.s_addr);
@@ -585,7 +594,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
             config::EbcNodes nodes = msg.nodes();
             config::EbcNode node;
             int node_count = nodes.ebcnodes_size();
-            QLOG_WARN()<<"get reply nodes:";
+            QLOG_WARN()<<"get reply nodes number :"<<node_count;
             for(int i=0; i<node_count; ++i)
             {
                 node = nodes.ebcnodes(i);
@@ -605,7 +614,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                     continue;
                 if(kad->findNode(tId))
                 {
-                    if(!kad->getNode(tId)->isExpired())
+                    if(!kad->getNode(tId)->isExpired())//如何桶中已发现该节点
                         continue;
                 }
                 else
@@ -638,7 +647,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
             NodeId tid(sr.tid());
             int node_count = sr.nodes().ebcnodes_size();
             auto tidsr = srch->findSearchList(sr.tid());
-            if(tidsr == srch->searches.end())
+            if(tidsr == srch->searches.end())//正常来说不会出现
             {
                 QLOG_ERROR()<<"the searchlist is not exist";
                 return ;
@@ -785,6 +794,22 @@ void NetEngine::setNodeExpired(const UDTSOCKET &sock,bool isServer)
     {
         Sp<Node>& epnode = iter->second;
         epnode->setExpired();
+    }
+}
+
+void NetEngine::eraseNodeExpired(const UDTSOCKET &sock, bool isServer)
+{
+    if(isServer)
+    {
+        auto iter = sockNodePairSrv.find(sock);
+        if(iter!= sockNodePairSrv.end())
+            sockNodePairSrv.erase(sock);
+    }
+    else
+    {
+        auto iter = sockNodePairSrv.find(sock);
+        if(iter!= sockNodePairSrv.end())
+            sockNodePairSrv.erase(sock);
     }
 }
 }

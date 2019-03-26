@@ -47,11 +47,13 @@ public:
     void closeBucket(destoryNet d);
     void expireBucket();
     void dump(int type = 0) const;
+    bool bucketIsEmpty(NodeId id); //have no nodes;
 
 private:    
     Kbucket buckets;
     NodeId selfId;
     bool isEmpty() const;
+
 };
 }
 #endif // BUCKET_H

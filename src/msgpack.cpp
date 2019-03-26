@@ -44,9 +44,10 @@ int msgPack::pack(config::MsgType type, void *msg, void *buf, int size,config::M
         }
         break;
     }
-    case config::MsgType::GET_DATA:
+    case config::MsgType::GET_DATA://发送请求
     {
         config::search *sr = (config::search*)msg;
+        ebcMsg.mutable_msg()->CopyFrom(*sr);//bug
         ebcMsg.set_length(sr->ByteSizeLong());
         break;
     }
@@ -101,12 +102,10 @@ int msgPack::unpack(const void *buf, int len)
     {
         if(ebcMsg.length() != ebcMsg.msg().ByteSizeLong())
         {
-            QLOG_ERROR()<<"get msg length error";
+            QLOG_ERROR()<<" unpack get msg length error";
             return -1;
         }
     }
-
-    //msgPrint();
     return 0;
 }
 
@@ -165,7 +164,7 @@ void msgPack::msgPrint()
             QLOG_INFO()<<"node port "<<nodes.ebcnodes(i).port_nat();
         }
     }
-    else if(!ebcMsg.has_msg())
+    else if(ebcMsg.has_msg())
     {
         config::search sr = ebcMsg.msg();
         int node_count = sr.nodes().ebcnodes_size();
@@ -178,8 +177,6 @@ void msgPack::msgPrint()
             QLOG_INFO()<<"node ip "<<sr.nodes().ebcnodes(i).ip();//注意，无法打印
             QLOG_INFO()<<"node port "<<sr.nodes().ebcnodes(i).port_nat();
         }
-
     }
 }
-
 }
