@@ -79,12 +79,13 @@ enum MsgType {
   HEART = 4,
   REP = 5,
   PUNCH = 6,
+  SENDDATASTREAM = 7,
   MsgType_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::google::protobuf::int32>::min(),
   MsgType_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::google::protobuf::int32>::max()
 };
 bool MsgType_IsValid(int value);
 const MsgType MsgType_MIN = EMPTY;
-const MsgType MsgType_MAX = PUNCH;
+const MsgType MsgType_MAX = SENDDATASTREAM;
 const int MsgType_ARRAYSIZE = MsgType_MAX + 1;
 
 enum MsgSubType {
@@ -92,12 +93,13 @@ enum MsgSubType {
   PONG = 1,
   NODE = 2,
   DATA = 3,
+  DATASTREAM = 4,
   MsgSubType_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::google::protobuf::int32>::min(),
   MsgSubType_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::google::protobuf::int32>::max()
 };
 bool MsgSubType_IsValid(int value);
 const MsgSubType MsgSubType_MIN = EMPTY_SUB;
-const MsgSubType MsgSubType_MAX = DATA;
+const MsgSubType MsgSubType_MAX = DATASTREAM;
 const int MsgSubType_ARRAYSIZE = MsgSubType_MAX + 1;
 
 // ===================================================================
@@ -541,6 +543,7 @@ class EbcMsg final :
   enum BodyCase {
     kMsg = 10,
     kNodes = 11,
+    kEbcdata = 12,
     BODY_NOT_SET = 0,
   };
 
@@ -688,6 +691,23 @@ class EbcMsg final :
   ::config::EbcNodes* mutable_nodes();
   void set_allocated_nodes(::config::EbcNodes* nodes);
 
+  // bytes ebcdata = 12;
+  private:
+  bool has_ebcdata() const;
+  public:
+  void clear_ebcdata();
+  static const int kEbcdataFieldNumber = 12;
+  const ::std::string& ebcdata() const;
+  void set_ebcdata(const ::std::string& value);
+  #if LANG_CXX11
+  void set_ebcdata(::std::string&& value);
+  #endif
+  void set_ebcdata(const char* value);
+  void set_ebcdata(const void* value, size_t size);
+  ::std::string* mutable_ebcdata();
+  ::std::string* release_ebcdata();
+  void set_allocated_ebcdata(::std::string* ebcdata);
+
   void clear_body();
   BodyCase body_case() const;
   // @@protoc_insertion_point(class_scope:config.EbcMsg)
@@ -695,6 +715,7 @@ class EbcMsg final :
   class HasBitSetters;
   void set_has_msg();
   void set_has_nodes();
+  void set_has_ebcdata();
 
   inline bool has_body() const;
   inline void clear_has_body();
@@ -712,6 +733,7 @@ class EbcMsg final :
     BodyUnion() {}
     ::config::search* msg_;
     ::config::EbcNodes* nodes_;
+    ::google::protobuf::internal::ArenaStringPtr ebcdata_;
   } body_;
   mutable ::google::protobuf::internal::CachedSize _cached_size_;
   ::google::protobuf::uint32 _oneof_case_[1];
@@ -1346,6 +1368,98 @@ inline ::config::EbcNodes* EbcMsg::mutable_nodes() {
   }
   // @@protoc_insertion_point(field_mutable:config.EbcMsg.nodes)
   return body_.nodes_;
+}
+
+// bytes ebcdata = 12;
+inline bool EbcMsg::has_ebcdata() const {
+  return body_case() == kEbcdata;
+}
+inline void EbcMsg::set_has_ebcdata() {
+  _oneof_case_[0] = kEbcdata;
+}
+inline void EbcMsg::clear_ebcdata() {
+  if (has_ebcdata()) {
+    body_.ebcdata_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+    clear_has_body();
+  }
+}
+inline const ::std::string& EbcMsg::ebcdata() const {
+  // @@protoc_insertion_point(field_get:config.EbcMsg.ebcdata)
+  if (has_ebcdata()) {
+    return body_.ebcdata_.GetNoArena();
+  }
+  return *&::google::protobuf::internal::GetEmptyStringAlreadyInited();
+}
+inline void EbcMsg::set_ebcdata(const ::std::string& value) {
+  // @@protoc_insertion_point(field_set:config.EbcMsg.ebcdata)
+  if (!has_ebcdata()) {
+    clear_body();
+    set_has_ebcdata();
+    body_.ebcdata_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  }
+  body_.ebcdata_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:config.EbcMsg.ebcdata)
+}
+#if LANG_CXX11
+inline void EbcMsg::set_ebcdata(::std::string&& value) {
+  // @@protoc_insertion_point(field_set:config.EbcMsg.ebcdata)
+  if (!has_ebcdata()) {
+    clear_body();
+    set_has_ebcdata();
+    body_.ebcdata_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  }
+  body_.ebcdata_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:config.EbcMsg.ebcdata)
+}
+#endif
+inline void EbcMsg::set_ebcdata(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  if (!has_ebcdata()) {
+    clear_body();
+    set_has_ebcdata();
+    body_.ebcdata_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  }
+  body_.ebcdata_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:config.EbcMsg.ebcdata)
+}
+inline void EbcMsg::set_ebcdata(const void* value, size_t size) {
+  if (!has_ebcdata()) {
+    clear_body();
+    set_has_ebcdata();
+    body_.ebcdata_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  }
+  body_.ebcdata_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:config.EbcMsg.ebcdata)
+}
+inline ::std::string* EbcMsg::mutable_ebcdata() {
+  if (!has_ebcdata()) {
+    clear_body();
+    set_has_ebcdata();
+    body_.ebcdata_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  }
+  // @@protoc_insertion_point(field_mutable:config.EbcMsg.ebcdata)
+  return body_.ebcdata_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* EbcMsg::release_ebcdata() {
+  // @@protoc_insertion_point(field_release:config.EbcMsg.ebcdata)
+  if (has_ebcdata()) {
+    clear_has_body();
+    return body_.ebcdata_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  } else {
+    return nullptr;
+  }
+}
+inline void EbcMsg::set_allocated_ebcdata(::std::string* ebcdata) {
+  if (has_body()) {
+    clear_body();
+  }
+  if (ebcdata != nullptr) {
+    set_has_ebcdata();
+    body_.ebcdata_.UnsafeSetDefault(ebcdata);
+  }
+  // @@protoc_insertion_point(field_set_allocated:config.EbcMsg.ebcdata)
 }
 
 inline bool EbcMsg::has_body() const {

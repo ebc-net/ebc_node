@@ -34,6 +34,7 @@ class EbcMsgDefaultTypeInternal {
   ::google::protobuf::internal::ExplicitlyConstructed<EbcMsg> _instance;
   const ::config::search* msg_;
   const ::config::EbcNodes* nodes_;
+  ::google::protobuf::internal::ArenaStringPtr ebcdata_;
 } _EbcMsg_default_instance_;
 }  // namespace config
 static void InitDefaultsEbcNode_msg_2eproto() {
@@ -106,6 +107,7 @@ bool MsgType_IsValid(int value) {
     case 4:
     case 5:
     case 6:
+    case 7:
       return true;
     default:
       return false;
@@ -118,6 +120,7 @@ bool MsgSubType_IsValid(int value) {
     case 1:
     case 2:
     case 3:
+    case 4:
       return true;
     default:
       return false;
@@ -1203,6 +1206,7 @@ const int EbcMsg::kSubTypeFieldNumber;
 const int EbcMsg::kLengthFieldNumber;
 const int EbcMsg::kMsgFieldNumber;
 const int EbcMsg::kNodesFieldNumber;
+const int EbcMsg::kEbcdataFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 EbcMsg::EbcMsg()
@@ -1233,6 +1237,10 @@ EbcMsg::EbcMsg(const EbcMsg& from)
     }
     case kNodes: {
       mutable_nodes()->::config::EbcNodes::MergeFrom(from.nodes());
+      break;
+    }
+    case kEbcdata: {
+      set_ebcdata(from.ebcdata());
       break;
     }
     case BODY_NOT_SET: {
@@ -1284,6 +1292,10 @@ void EbcMsg::clear_body() {
     }
     case kNodes: {
       delete body_.nodes_;
+      break;
+    }
+    case kEbcdata: {
+      body_.ebcdata_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
       break;
     }
     case BODY_NOT_SET: {
@@ -1421,6 +1433,21 @@ const char* EbcMsg::_InternalParse(const char* begin, const char* end, void* obj
         ptr += size;
         GOOGLE_PROTOBUF_PARSER_ASSERT(ctx->ParseExactRange(
             {parser_till_end, object}, ptr - size, ptr));
+        break;
+      }
+      // bytes ebcdata = 12;
+      case 12: {
+        if (static_cast<::google::protobuf::uint8>(tag) != 98) goto handle_unusual;
+        ptr = ::google::protobuf::io::ReadSize(ptr, &size);
+        GOOGLE_PROTOBUF_PARSER_ASSERT(ptr);
+        object = msg->mutable_ebcdata();
+        if (size > end - ptr + ::google::protobuf::internal::ParseContext::kSlopBytes) {
+          parser_till_end = ::google::protobuf::internal::GreedyStringParser;
+          goto string_till_end;
+        }
+        GOOGLE_PROTOBUF_PARSER_ASSERT(::google::protobuf::internal::StringCheck(ptr, size, ctx));
+        ::google::protobuf::internal::InlineGreedyStringParser(object, ptr, size, ctx);
+        ptr += size;
         break;
       }
       default: {
@@ -1591,6 +1618,17 @@ bool EbcMsg::MergePartialFromCodedStream(
         break;
       }
 
+      // bytes ebcdata = 12;
+      case 12: {
+        if (static_cast< ::google::protobuf::uint8>(tag) == (98 & 0xFF)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadBytes(
+                input, this->mutable_ebcdata()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -1678,6 +1716,12 @@ void EbcMsg::SerializeWithCachedSizes(
       11, HasBitSetters::nodes(this), output);
   }
 
+  // bytes ebcdata = 12;
+  if (has_ebcdata()) {
+    ::google::protobuf::internal::WireFormatLite::WriteBytesMaybeAliased(
+      12, this->ebcdata(), output);
+  }
+
   output->WriteRaw(_internal_metadata_.unknown_fields().data(),
                    static_cast<int>(_internal_metadata_.unknown_fields().size()));
   // @@protoc_insertion_point(serialize_end:config.EbcMsg)
@@ -1762,6 +1806,13 @@ size_t EbcMsg::ByteSizeLong() const {
           *body_.nodes_);
       break;
     }
+    // bytes ebcdata = 12;
+    case kEbcdata: {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::BytesSize(
+          this->ebcdata());
+      break;
+    }
     case BODY_NOT_SET: {
       break;
     }
@@ -1816,6 +1867,10 @@ void EbcMsg::MergeFrom(const EbcMsg& from) {
     }
     case kNodes: {
       mutable_nodes()->::config::EbcNodes::MergeFrom(from.nodes());
+      break;
+    }
+    case kEbcdata: {
+      set_ebcdata(from.ebcdata());
       break;
     }
     case BODY_NOT_SET: {

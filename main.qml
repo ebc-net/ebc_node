@@ -17,7 +17,6 @@ Window
         target: log
         onNewLog:
         {
-
             if(level==2)
             {
                 output_text.text+='<br />'+'<font color="green">&nbsp;'+str+'</font>'
@@ -30,7 +29,6 @@ Window
             {
                 output_text.text+='<br />'+'<font color="red">&nbsp;'+str+'</font>'
             }
-
         }
     }
 
@@ -67,16 +65,10 @@ Window
     {
         id: node_id
         width: 330
-
-        //inputMask: "xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx"
-
-       // text:"0000 0000 0000 0000 0000 0000 0000 0000 0000 0000"
-
         anchors.horizontalCenter: rectangle.horizontalCenter
-
         anchors.top: rectangle.bottom
         anchors.bottom: start_btn.top
-
+        maximumLength: 40
 }
 
     Button
@@ -96,7 +88,7 @@ Window
     {
         id: search_btn
         anchors.bottom: parent.bottom
-        anchors.right: start_btn.left
+        anchors.right: egg2.left
         text: "search"
         onClicked:
         {
@@ -104,6 +96,52 @@ Window
             log.searchId(node_id.text)
         }
     }
-
+    Button
+    {
+        id: clean_text_btn
+        anchors.bottom: parent.bottom
+        anchors.left: start_btn.right
+        text: "clean text"
+        onClicked:
+        {
+            output_text.text =""
+        }
+    }
+    Button
+    {
+        id: clean_search_btn
+        anchors.bottom: parent.bottom
+        anchors.right: search_btn.left
+        text: "clean search"
+        onClicked:
+        {
+           node_id.text = ""
+        }
+    }
+    Button
+    {
+        id: egg
+        width: 6
+        height:6
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+         text: ""
+         onClicked:
+         {
+             node_id.text = "*************    彩蛋彩蛋 (:D)    ******************"
+         }
+    }
+    Button
+    {
+        id: egg2
+        width: 2
+        anchors.bottom: parent.bottom
+        anchors.right: start_btn.left
+         text: ""
+         onClicked:
+         {
+             node_id.text = "************    彩蛋中的彩蛋 (:D)    *****************"
+         }
+    }
 }
 

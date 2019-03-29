@@ -19,7 +19,8 @@ struct searchNode
     Sp<Node> node;
     time_point requestTime;   //上次消息达到的时间,
     bool replied;
-    searchNode():requestTime(time_point::min()),replied(false){}
+    int requiredTimes;
+    searchNode():requestTime(time_point::min()),replied(false),requiredTimes(0){}
 };
 
 struct search

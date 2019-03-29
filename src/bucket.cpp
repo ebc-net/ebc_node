@@ -5,15 +5,15 @@
 #include<ctime>
 
 
+
+namespace NET
+{
 static std::mt19937 rd(std::chrono::system_clock::now().time_since_epoch().count());
 #ifdef _WIN32
 static std::uniform_int_distribution<int> rand_byte{ 0, std::numeric_limits<uint8_t>::max() };
 #else
 static std::uniform_int_distribution<uint8_t> rand_byte;
 #endif
-
-namespace NET
-{
 
 Bucket::Bucket(const NodeId &_id):selfId(_id)
 {
@@ -132,7 +132,7 @@ bool Bucket::onNewNode(const Sp<Node>& node, int confirm, bool isServer)
 
     for (auto& n : b->nodes)
     {
-        if (n == node)
+        if (n->getId() == node->getId())
             return false;
     }
 
@@ -154,7 +154,7 @@ bool Bucket::onNewNode(const Sp<Node>& node, int confirm, bool isServer)
         int dNum = isServer?11:6;
         if (mybucket || depth(b) < dNum) {
             split(b);
-            return onNewNode(node, confirm);
+            return onNewNode(node, confirm,isServer);
         }
         QLOG_WARN()<<"drop new node for bucket full : ";
         node->getId().printNodeId(true);
@@ -213,6 +213,12 @@ bool Bucket::bucketMaintenance(sendNode sendFindNode, bool neighbour)
             continue;
         }
 
+        if(!neighbour && (q->lastTime < (clock::now() - seconds(5*buckets.size()))))
+        {
+            q=std::next(q);
+            continue;
+        }
+
         for(auto &n : q->nodes)
         {
             if(!n->isExpired())
@@ -221,10 +227,10 @@ bool Bucket::bucketMaintenance(sendNode sendFindNode, bool neighbour)
                 dstNode = n;
             }
         }
-        badNode = q->nodes.size() - goodNode;//bug
-
+        badNode = q->nodes.size() - goodNode;//bug     
         if(!neighbour && (badNode >goodNode )&&goodNode > 0)//bug
         {
+            q->lastTime = clock::now();
             sendFindNode(dstNode, randomId(q));
             return true;
         }
@@ -255,7 +261,10 @@ bool Bucket::bucketMaintenance(sendNode sendFindNode, bool neighbour)
                         );
 
                 if(it != b.nodes.end())
+                {
+                    q->lastTime = clock::now();
                     return true;
+                }
                 return false;
             };
 
@@ -371,79 +380,77 @@ std::list<Sp<Node>> Bucket::repNodes(const NodeId &id)
     {
         return returnNodes;
     }
+    auto it = findBucket(id);
+    int bit = depth(it) - 1;
+    NodeId id_first = it->first;
+    auto insertNodes = [&](int k,NodeId id)
+    {
         auto it = findBucket(id);
-        static int bit = depth(it) - 1;
-        NodeId id_first = it->first;
-        auto insertNodes = [&](int k,NodeId id)
+        if(it->first != id)
         {
-            auto it = findBucket(id);
-            if(it->first != id)
-            {
-                return 0;
-            }
-            int insertNumber = 0;
-            for(auto &n : it->nodes)
-            {
-                if(!n->isExpired())
-                {
-                    returnNodes.push_back(n);
-                    insertNumber ++;
-                    if(--k <= 0)
-                        break;
-                }
-            }
-            return insertNumber;
-        };
-        int k = 8;
-        bool kIs1 = false;
-        insertNodes(k,it->first);
-        for (;  bit >= 0 ; bit--)
-        {
-            int num = 0;
-            auto insertOther = [&,insertNodes](int i)
-            {
-                id_first[(bit + i) / 8] ^= (0x80 >> ((bit + i) % 8));
-                auto thisNum = insertNodes(k, id_first);
-                num += thisNum;
-                return thisNum;
-            };
-            auto insertOtherOne = [&,insertOther](int i)
-            {
-                auto tmp = insertOther(i);
-                if(kIs1 && !tmp)
-                {
-                    insertOther(4);
-                    id_first[(bit + 4) / 8] ^= (0x80 >> ((bit + 4) % 8));
-                }
-            };
-            insertOther(0);
-
-            if(k < 8)
-            {
-                insertOther(1);
-
-                if(k < 4)
-                {
-                    insertOther(2);
-                    insertOther(1);
-                    if(k < 2)
-                    {
-                        insertOtherOne(3);
-                        insertOtherOne(2);
-                        insertOtherOne(1);
-                        insertOtherOne(2);
-                        kIs1 = true;
-                    }
-
-                }
-            }
-            id_first[bit / 8] &= (0xfe << (7 - bit % 8));
-            id_first[bit / 8 + 1] = 0x00;
-            if(k > 1)
-                k /= 2;
+            return 0;
         }
-        QLOG_WARN()<<"srv repnodes number:"<<returnNodes.size();
+        int insertNumber = 0;
+        for(auto &n : it->nodes)
+        {
+            if(!n->isExpired())
+            {
+                returnNodes.push_back(n);
+                insertNumber ++;
+                if(--k <= 0)
+                    break;
+            }
+        }
+        return insertNumber;
+    };
+    int k = 8;
+    bool kIs1 = false;
+    insertNodes(k,it->first);
+    for (;  bit >= 0 ; bit--)
+    {
+        int num = 0;
+        auto insertOther = [&,insertNodes](int i)
+        {
+            id_first[(bit + i) / 8] ^= (0x80 >> ((bit + i) % 8));
+            auto thisNum = insertNodes(k, id_first);
+            num += thisNum;
+            return thisNum;
+        };
+        auto insertOtherOne = [&,insertOther](int i)
+        {
+            auto tmp = insertOther(i);
+            if(kIs1 && !tmp)
+            {
+                insertOther(4);
+                id_first[(bit + 4) / 8] ^= (0x80 >> ((bit + 4) % 8));
+            }
+        };
+        insertOther(0);
 
+        if(k < 8)
+        {
+            insertOther(1);
+
+            if(k < 4)
+            {
+                insertOther(2);
+                insertOther(1);
+                if(k < 2)
+                {
+                    insertOtherOne(3);
+                    insertOtherOne(2);
+                    insertOtherOne(1);
+                    insertOtherOne(2);
+                    kIs1 = true;
+                }
+
+            }
+        }
+        id_first[bit / 8] &= (0xfe << (7 - bit % 8));
+        id_first[bit / 8 + 1] = 0x00;
+        if(k > 1)
+            k /= 2;
+    }
     return returnNodes;
 }
 bool Bucket::split(const Kbucket::iterator &b)
@@ -515,8 +522,6 @@ void Bucket::dump(int type) const
     if(type == 0)//ALL
     {
         int i = 1,j = 0;
-        QLOG_ERROR()<<"self id is:";
-        selfId.printNodeId();
         QLOG_ERROR()<<"New table";
         for(auto& b: buckets)
         {
@@ -531,6 +536,8 @@ void Bucket::dump(int type) const
         }
         QLOG_WARN()<<"k-bucket num = "<<buckets.size();
         QLOG_WARN()<<"good nodes number = "<<j;
+        QLOG_ERROR()<<"self id is:";
+        selfId.printNodeId();
     }
     else if(type == 1)//节点
     {
@@ -550,6 +557,23 @@ void Bucket::dump(int type) const
         QLOG_INFO()<<"bucket num = "<<buckets.size();
         QLOG_INFO()<<"total node num = "<<sum;
         QLOG_INFO()<<"Good nodes num = "<<good_sum;
+    }
+    if(type == 3)//ALL
+    {
+        int i = 1,j = 0;
+        QLOG_ERROR()<<"networkTable";
+        for(auto& b: buckets)
+        {
+            for(auto& n: b.nodes)
+            {
+                n->getId().printNodeId(n->isExpired());
+                if(!n->isExpired())
+                    j+=1;
+            }
+        }
+        QLOG_WARN()<<"good nodes number = "<<j;
+        QLOG_ERROR()<<"self id is:";
+        selfId.printNodeId();
     }
 }
 

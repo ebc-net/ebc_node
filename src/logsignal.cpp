@@ -38,7 +38,7 @@ void logSignal::searchId(QString _id)
 
         tid[ii++]= high<<4|low;
     }
-    QLOG_WARN()<<"Search the node:";
+    QLOG_ERROR()<<"Search the node:";
     tid.printNodeId();
     eng->startSearch(tid);
 }

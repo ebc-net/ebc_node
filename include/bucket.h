@@ -19,6 +19,7 @@ struct bucket
     sa_family_t af {0};
     NodeId first {};
     std::list<Sp<Node>> nodes {};
+    time_point lastTime = time_point::min();
     Sp<Node> cached;                    /* the address of a likely candidate */
 };
 
@@ -48,9 +49,10 @@ public:
     void expireBucket();
     void dump(int type = 0) const;
     bool bucketIsEmpty(NodeId id); //have no nodes;
+    Kbucket buckets;
 
 private:    
-    Kbucket buckets;
+
     NodeId selfId;
     bool isEmpty() const;
 

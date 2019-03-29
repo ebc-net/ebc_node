@@ -11,6 +11,7 @@ enum MsgType
 	HEART = 4;
 	REP   = 5;
 	PUNCH = 6;
+	SENDDATASTREAM = 7;
 }
 
 enum MsgSubType
@@ -19,6 +20,7 @@ enum MsgSubType
 	PONG = 1;
 	NODE = 2;
 	DATA = 3;
+	DATASTREAM = 4;
 }
 
 message EbcNode
@@ -31,6 +33,7 @@ message EbcNodes//服务器发回节点的消息
 {
 	repeated EbcNode ebcNodes= 1;
 }
+
 
 message search
 {
@@ -58,6 +61,7 @@ message EbcMsg
 	{	
 		search   msg = 10;        //消息正文，可选字段
 		EbcNodes nodes= 11;    //节点信息，如果消息子类型是NODE的话
+		bytes ebcdata = 12; //ebc数据流
 	}
 }
  

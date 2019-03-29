@@ -11,7 +11,7 @@ msgPack::msgPack(const NET::NodeId &_id):self_id(_id)
     ebcMsg.Clear();
 }
 
-int msgPack::pack(config::MsgType type, void *msg, void *buf, int size,config::MsgSubType subType)
+int msgPack::pack(config::MsgType type,const void *msg, void *buf, int size,config::MsgSubType subType,int msgSize)
 {
     ebcMsg.set_head(msgHead);//0xF5FA
     ebcMsg.set_version(NET_VERSION);//V0.0.0
@@ -59,10 +59,15 @@ int msgPack::pack(config::MsgType type, void *msg, void *buf, int size,config::M
         ebcMsg.set_length(nodes->ByteSizeLong());
         break;
     }
+    case config::MsgType::SENDDATASTREAM:
+    {
+        ebcMsg.set_ebcdata(msg, msgSize);
+        ebcMsg.set_length(msgSize);
+        break;
+    }
     default:
         break;
     }
-
     if(buf != nullptr)
         ebcMsg.SerializeToArray(buf, size);
     return ebcMsg.ByteSizeLong();
@@ -168,12 +173,12 @@ void msgPack::msgPrint()
     {
         config::search sr = ebcMsg.msg();
         int node_count = sr.nodes().ebcnodes_size();
-        QLOG_INFO()<<"search id";
-        NodeId(sr.tid()).printNodeId();
+        QLOG_ERROR()<<"search id";
+        NodeId(sr.tid()).printNodeId(0);
         for(int i=0; i<node_count; ++i)
         {
-            QLOG_INFO()<<"node id ";
-            NodeId(sr.nodes().ebcnodes(i).id()).printNodeId();
+            QLOG_ERROR()<<"node id ";
+            NodeId(sr.nodes().ebcnodes(i).id()).printNodeId(0);
             QLOG_INFO()<<"node ip "<<sr.nodes().ebcnodes(i).ip();//注意，无法打印
             QLOG_INFO()<<"node port "<<sr.nodes().ebcnodes(i).port_nat();
         }

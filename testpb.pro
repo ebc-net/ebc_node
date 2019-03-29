@@ -24,7 +24,8 @@ SOURCES += \
     src/msgpack.cpp \
     src/utils.cpp \
     src/logsignal.cpp \
-    src/search.cpp
+    src/search.cpp \
+    src/ebcMP2PNetWorkAPI.cpp
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -66,7 +67,12 @@ HEADERS += \
     include/QsLog.h \
     include/logsignal.h \
     include/nodeid.h \
-    include/search.h
+    include/search.h \
+    include/ebcCoreParameter.h \
+    include/ebcCreateInfomationAPI.h \
+    include/ebcMP2PNetWorkAPI.h
 
 RESOURCES += \
     qml.qrc
+
+DISTFILES +=

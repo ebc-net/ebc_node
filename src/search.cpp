@@ -39,15 +39,19 @@ bool Search::addSearchNode(Sp<Node> &node, NodeId tid)
     auto id = s->tid;
     searchNode searchnode;
     searchnode.node = node;
-//    if(s->searchNodes.size() == 0)//bug
-//    {
-//        s->searchNodes.push_back(searchnode);
-//        return true;
-//    }
+    searchnode.replied = false;
+    searchnode.requiredTimes = 0;
+    searchnode.requestTime = time_point::min();
+
     for (auto &n :s->searchNodes) //如果要插入的节点已经在列表中,则返回,此处是否与58冲突?
     {
         if(n.node == node)
+        {
+            QLOG_INFO()<<"add the same node";
+            QLOG_WARN()<<"check the replied"<<n.replied;
+            node->getId().printNodeId();
             return true;
+        }
     }
     auto here = std::find_if(s->searchNodes.begin(),s->searchNodes.end(),
                              [&node,&id](searchNode &n)
@@ -60,8 +64,8 @@ bool Search::addSearchNode(Sp<Node> &node, NodeId tid)
     return true;
 }
 
-//返回0：成功
-//返回1：正在找
+//返回1：成功
+//返回0：正在找
 //返回－1：查找列表已满
 //返回－2：失败
 int Search::dhtSearch(NodeId tid, std::function<void (NodeId, Node &snode)> callback,Bucket::sendNode _send,bool isValue)
@@ -79,7 +83,7 @@ int Search::dhtSearch(NodeId tid, std::function<void (NodeId, Node &snode)> call
         if(!n->isExpired())
         {
             callback(tid,*(n.get()));
-            return 0;//成功返回0
+            return 1;//成功返回0
         }
     }
 
@@ -90,9 +94,10 @@ int Search::dhtSearch(NodeId tid, std::function<void (NodeId, Node &snode)> call
         {
             searchStep(it, send);
             it->step_time = clock::now();
-            return 1;//think about
+
+            return 0;//think about
         }
-        // new search
+        // new search reset.
         it->done = 0;
         it->step_time = clock::now();
         it->tid =tid;
@@ -106,6 +111,7 @@ int Search::dhtSearch(NodeId tid, std::function<void (NodeId, Node &snode)> call
                 continue;
             }
             iter->replied= false;
+            iter->requiredTimes = 0 ;
             iter->requestTime = time_point ::min();
             iter++;
         }
@@ -120,12 +126,13 @@ int Search::dhtSearch(NodeId tid, std::function<void (NodeId, Node &snode)> call
     QLOG_WARN()<<"find closest node : ";
     for(auto &n :nodes)
     {
+        n->getId().printNodeId(1);
         if(!addSearchNode(n,tid))
             return -1;
-        n->getId().printNodeId();
+
     }
     searchStep(tid,send,3);//m=3
-    return 0;
+    return 1;
 }
 void Search::searchStep(NodeId &tid,Bucket::sendNode send,int m)
 {
@@ -134,6 +141,9 @@ void Search::searchStep(NodeId &tid,Bucket::sendNode send,int m)
 }
 void Search::searchStep(const Searches::iterator &sr,Bucket::sendNode send,int m)
 {
+
+    if(sr->done)
+        return;
     bool isDone=true;
     int j = 0;
     /* Check if the first 8 live nodes have replied. */
@@ -141,7 +151,7 @@ void Search::searchStep(const Searches::iterator &sr,Bucket::sendNode send,int m
     {
         if(j++>=8)
             break;
-        if(n.node->isExpired())
+        if(n.node->isExpired() || n.requiredTimes >=2 )
             continue;
         if(!n.replied)
         {
@@ -157,17 +167,20 @@ void Search::searchStep(const Searches::iterator &sr,Bucket::sendNode send,int m
         return;
     }
     //未达到发送时间（间隔10S）
-    if(sr->step_time + seconds(10) >= clock::now())
-        return;
+//    if(sr->step_time + seconds(10) >= clock::now())//这个时间后期加入网络环境再根据情况做调整
+//        return;
     j = 0;
     for(auto &n : sr->searchNodes)
     {
-        if(!n.replied && (n.requestTime < clock::now() - seconds(10)))
+        if(!n.replied && (n.requiredTimes <3)&&(n.requestTime < clock::now() - seconds(2)))
         {
-            send(n.node,sr->tid);
-            n.requestTime = clock::now();
             if(j++>=m)//给前3个发
                 break;
+            send(n.node,sr->tid);
+            QLOG_ERROR()<<"send 3 node to search";
+            n.node->getId().printNodeId(1);
+            n.requestTime = clock::now();
+            n.requiredTimes += 1;
         }
     }
     sr->step_time = clock::now();
