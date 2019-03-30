@@ -22,6 +22,8 @@ void NetEngine::NetInit(const NodeId _id, Sp<Bucket> _kad, const bool _isServer)
     local_addr.sin_family = AF_INET;
     srch = std::make_shared<Search> (kad);
     sbuf.resize(1024*1024);
+    std::list<std::string> onlineNodeAddress{};//jian yue
+
     sendSearchNode = [&](Sp<Node> &dstNode, NodeId tId)
     {
         char sbuf[1024]="";
@@ -38,6 +40,26 @@ void NetEngine::NetInit(const NodeId _id, Sp<Bucket> _kad, const bool _isServer)
         int ret = UDT::sendmsg(dstNode->getSock(), sbuf, msg_len);
         QLOG_WARN()<<"sendmsg to searchnode"<<ret;
     };
+     sendFindNode = [&](Sp<Node> &dstNode, NodeId targetId)
+    {
+        char fbuf[1024]="";
+         config::EbcNode targetNode;
+        targetNode.set_id(targetId.toString());
+        msgPack sendMsg(self.getId());
+        int msg_len = sendMsg.pack(config::MsgType::GET_NODE, &targetNode, fbuf, sizeof(fbuf));//只传ID去
+        if(msg_len < 0)
+            return ;
+        UDT::sendmsg(dstNode->getSock(), buf, msg_len);
+    };
+
+}
+
+void NetEngine::NetInit(const std::string *createNetworkNodeAddress)
+{
+    NodeId id{};
+    id = createNetworkNodeAddress->substr(3, ID_LENGTH);
+    Sp<NET::Bucket>  kad = std::make_shared <NET::Bucket>(id);
+    NetInit(id, kad);
 }
 
 NetEngine::~NetEngine()
@@ -349,17 +371,17 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
             }
 
             //bucket maintenance (expired node  or neighbourhood）
-            auto sendFindNode = [&](Sp<Node> &dstNode, NodeId targetId)
-            {
-                config::EbcNode targetNode;
-                targetNode.set_id(targetId.toString());
-                msgPack sendMsg(self.getId());
-                int msg_len = sendMsg.pack(config::MsgType::GET_NODE, &targetNode, buf, sizeof(buf));//只传ID去
-                if(msg_len < 0)
-                    return ;
+//            auto sendFindNode = [&](Sp<Node> &dstNode, NodeId targetId)
+//            {
+//                config::EbcNode targetNode;
+//                targetNode.set_id(targetId.toString());
+//                msgPack sendMsg(self.getId());
+//                int msg_len = sendMsg.pack(config::MsgType::GET_NODE, &targetNode, buf, sizeof(buf));//只传ID去
+//                if(msg_len < 0)
+//                    return ;
 
-                UDT::sendmsg(dstNode->getSock(), buf, msg_len);
-            };
+//                UDT::sendmsg(dstNode->getSock(), buf, msg_len);
+//            };
 
             if(clock::now() >= maintenanceTime)
             {
@@ -374,7 +396,8 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
 
                     if(kad->grow_time <= clock::now() - seconds(150))//mybucket加入新节点后150s再扩桶
                     {
-                        kad->bucketMaintenance(sendFindNode,true);//扩
+                        maintanence();
+                        //kad->bucketMaintenance(sendFindNode,true);//扩
                         QLOG_INFO()<<"send get_node for self maintenance";
                         kad->grow_time = clock::now();
                     }
@@ -890,6 +913,65 @@ int NetEngine::startPunch(int& epollFd, uint32_t ip, uint16_t port)//对端的IP
 bool NetEngine::appendBucket(const Sp<Node> &node)
 {
     return kad->onNewNode(node,2,isServer);//judge if appendbucket success
+}
+
+bool NetEngine::maintanence()
+{
+    return kad->bucketMaintenance(sendFindNode,true);
+}
+
+bool NetEngine::joinNetWork(const std::string *joinNetworkNodeAddress)
+{
+    NET::NodeId sid{};
+    sid = joinNetworkNodeAddress->substr(3, ID_LENGTH);
+    return startSearch(sid);
+}
+
+bool NetEngine::getBucket()
+{
+    for(auto &b : kad->buckets)
+    {
+        for(auto &n : b.nodes)
+        {
+            if(!n->isExpired())
+            {
+                onlineNodeTable.push_back("ebc" + n->getId().toString());//这里后四位加什么
+            }
+        }
+    }
+}
+
+bool NetEngine::eraseNode(const std::string *breakNetworkNodeAddress)
+{
+    NodeId sid{};
+    sid = breakNetworkNodeAddress->substr(3, ID_LENGTH);
+    Sp<Node> node = kad->getNode(sid);
+    if(node == nullptr)
+        return false;
+    int sock = node->getSock();
+    node->setExpired();
+    UDT::epoll_remove_usock(epollFd, sock);
+    UDT::close(sock);
+    setNodeExpired(sock,true);
+    eraseNodeExpired(sock,true);
+    return true;
+}
+
+const bool NetEngine::sendDataStream(const std::string *sourceNodeAddress, const std::string *targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize)
+{
+    if (sendDataStreamBufferSize > 1024*1024)
+    {
+        QLOG_ERROR()<<"Datasize out of range";
+        return false;
+    }
+    NodeId sid{},tid{};
+    sid = sourceNodeAddress->substr(3,ID_LENGTH);
+    tid = targetNodeAddress->substr(3,ID_LENGTH);
+    if(sid != self.getId())
+    {
+        QLOG_ERROR()<<"self id is wrong!";
+        return false;
+    }
 }
 
 void NetEngine::setNodeExpired(const UDTSOCKET &sock,bool isServer)

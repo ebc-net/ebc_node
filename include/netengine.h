@@ -15,10 +15,11 @@ namespace NET{
 class NetEngine
 {
 public:
-
+    using sendNode =std::function<void(Sp<Node> &dstNode, NodeId tId)> ;
     NetEngine(const NodeId _id, Sp<Bucket>_kad,const bool _isServer = false);
     NetEngine(){}
     void NetInit(const NodeId _id, Sp<Bucket>_kad,const bool _isServer = false);
+    void NetInit(const std::string *createNetworkNodeAddress);
     ~NetEngine();
     void startServer();
     void startClient(const std::string ip=SUPER_NODE, const uint16_t port=SRV_PORT);
@@ -33,13 +34,23 @@ public:
     void setNodeExpired(const UDTSOCKET& sock,bool isServer = false);
     void eraseNodeExpired(const UDTSOCKET& sock,bool isServer = false);
 
-    void getUserDate(std::string & data);
+    bool getUserDate(std::string & data);
+    bool maintanence();
+    bool joinNetWork(const std::string *joinNetworkNodeAddress);
+    bool getBucket();
+    bool eraseNode(const std::string *breakNetworkNodeAddress);
+    const bool sendDataStream(const std::string *sourceNodeAddress, const std::string *targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize);
+    std::list<std::string> onlineNodeTable;
+
+
+
 private:
     void setUdtOpt(const UDTSOCKET &sock);   //设置socket的非阻塞以及发送/接收缓冲器的大小
     void handleMsg(UDTSOCKET, int epllFd = 0);
     int startPunch(int&,uint32_t ip, uint16_t port);
     //void appendBucket(const Sp<Node> &node);
     bool appendBucket(const Sp<Node> &node);
+
     Sp<Search> srch;
     UDTSOCKET boot_sock;  //本节点与服务器通信的SOCKET
     std::thread boot_thread; //启动线程，负责与服务器节点交互以及维护对端节点的连接
@@ -54,10 +65,13 @@ private:
     time_point searchTime;
     time_point expireTime;
     char buf[6*1024]="";
-    std::function<void(Sp<Node> &dstNode, NodeId tId)> sendSearchNode;
+
+    sendNode sendSearchNode;
+    sendNode sendFindNode;
     std::function<void(NodeId tId, Node &sNode)> foundCallback;
     std::vector<char> sbuf;
     std::list<std::string> userData;
+
 };
 }
 

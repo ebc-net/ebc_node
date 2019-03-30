@@ -7,7 +7,7 @@
    Language         : C++
    Development tool : Qt Creater 4.8.0
    Description      : MP2P communication and network interface API C++ file
- 
+
   (C) Copyright 2019  Right Chain Technolegy Corp., LTD.
 */
 
@@ -33,10 +33,7 @@ ebcMP2PNetWorkAPI::~ebcMP2PNetWorkAPI()
 */
 bool ebcMP2PNetWorkAPI::createNetwork(const std::string *createNetworkNodeAddress)
 {
-    NET::NodeId id{};
-    id = createNetworkNodeAddress->substr(3, ID_LENGTH);
-    NET::Sp<NET::Bucket>  kad = std::make_shared <NET::Bucket>(id);
-    engine.NetInit(id, kad);
+    engine.NetInit(createNetworkNodeAddress);
     engine.startClient();
     return 1;
 }
@@ -49,19 +46,7 @@ bool ebcMP2PNetWorkAPI::createNetwork(const std::string *createNetworkNodeAddres
 */
 bool ebcMP2PNetWorkAPI::updateNetwork()
 {
-    char buf[1024]="";
-    auto sendFindNode = [&](NET::Sp<NET::Node> &dstNode, NET::NodeId targetId)
-    {
-        config::EbcNode targetNode;
-        targetNode.set_id(targetId.toString());
-        NET::msgPack sendMsg(engine.self.getId());
-        int msg_len = sendMsg.pack(config::MsgType::GET_NODE, &targetNode, buf, sizeof(buf));//只传ID去
-        if(msg_len < 0)
-            return ;
-
-        UDT::sendmsg(dstNode->getSock(), buf, msg_len);
-    };
-    engine.kad->bucketMaintenance(sendFindNode,true);
+    engine.maintanence();
     return 1;
 }
 
@@ -73,22 +58,12 @@ bool ebcMP2PNetWorkAPI::updateNetwork()
 */
 void ebcMP2PNetWorkAPI::getNetworkTable(NETWORK_DOMAIN_TABLE *networkTable)
 {
-    uint16_t i = 0;
-    for(auto &b : engine.kad->buckets)
-    {
-        for(auto &n : b.nodes)
-        {
-            if(!n->isExpired())
-            {
-                networkTable->onlineNodeAddress.push_back("ebc" + n->getId().toString());//这里后四位加什么
-                i++;
-            }
-        }
-    }
-    networkTable->onlineNodeNumber = i;
+    engine.getBucket();
+    networkTable->onlineNodeNumber = engine.onlineNodeTable.size();
+    networkTable->onlineNodeAddress = engine.onlineNodeTable;
 }
 
- /* 
+/*
   功    能：加入一个指定的节点到MP2P网络中
   输入参数：createNetworkNodeAddress-字符型数据，组网节点地址
             jionNetworkNodeAddress-字符型数据，指定加入网络的节点地址
@@ -98,9 +73,7 @@ void ebcMP2PNetWorkAPI::getNetworkTable(NETWORK_DOMAIN_TABLE *networkTable)
 */
 bool ebcMP2PNetWorkAPI::joinNodeToNetwork(const std::string *joinNetworkNodeAddress)
 {
-    NET::NodeId sid{};
-    sid = joinNetworkNodeAddress->substr(3, ID_LENGTH);
-    return engine.startSearch(sid);
+    return engine.joinNetWork(joinNetworkNodeAddress);
 }
 
 /*
@@ -113,35 +86,14 @@ bool ebcMP2PNetWorkAPI::joinNodeToNetwork(const std::string *joinNetworkNodeAddr
 */
 bool ebcMP2PNetWorkAPI::breakNodeFormNetwork(const std::string *breakNetworkNodeAddress)
 {
-    NET::NodeId sid{};
-    sid = breakNetworkNodeAddress->substr(3, ID_LENGTH);
-    NET::Sp<NET::Node> node = engine.kad->getNode(sid);
-    if(node!= nullptr)
-    {
-        int sock;
-        for(auto &it : engine.sockNodePair)
-        {
-            if(it.second == node)
-            {
-                sock = it.first;
-                break;
-            }
-        }
-        node->setExpired();
-        UDT::epoll_remove_usock(engine.epollFd, sock);
-        UDT::close(sock);
-        engine.setNodeExpired(sock,true);
-        engine.eraseNodeExpired(sock,true);
-        return true;
-    }
-    return false;
+    return engine.eraseNode(breakNetworkNodeAddress);
 
 }
 
 /*
   功    能：由源地址发送数据流到目标地址函数
   输入参数：sourceNodeAddress-字符型数据，发送数据源节点地址
-            targetNodeAddress-字符型数据，接收数据目标节点地址，若目标地址为"ALL"则为广播式发送到当前网络域内的所有节点
+            targetNodeAddress-字符型数据，接收数据目标节点地址
             sendDataStreamBuffer-字符型数据流，发送数据流
             sendDataStreamBufferSize-整型数据，发送数据流长度
   输出参数：无
@@ -149,19 +101,7 @@ bool ebcMP2PNetWorkAPI::breakNodeFormNetwork(const std::string *breakNetworkNode
 */
 bool ebcMP2PNetWorkAPI::sendDataStream(const std::string *sourceNodeAddress, const std::string *targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize)
 {
-    if (sendDataStreamBufferSize > 1024*1024)
-    {
-        QLOG_ERROR()<<"Datasize out of range";
-        return false;
-    }
-    NET::NodeId sid{},tid{};
-    sid = sourceNodeAddress->substr(3,ID_LENGTH);
-    tid = targetNodeAddress->substr(3,ID_LENGTH);
-    if(sid != engine.self.getId())
-    {
-        QLOG_ERROR()<<"self id is wrong!";
-        return false;
-    }
+    engine.sendDataStream(const std::string *sourceNodeAddress, const std::string *targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize)
 
     return 0;
 }
@@ -179,7 +119,7 @@ uint32_t ebcMP2PNetWorkAPI::getReceiveDataStream(char *receiveDataStreamBuffer, 
         return 0;
 
     memcmp(receiveDataStreamBuffer, data.data(), data.size());
-	return 0;
+    return 0;
 }
 
 /*** end of file **************************************************************/

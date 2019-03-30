@@ -16,7 +16,7 @@
 #include <stdint.h>
 #include "ebcCoreParameter.h"
 #include"netengine.h"
-#include "bucket.h"
+//#include "bucket.h"
 #include "QsLog.h"
 //#include "node.h"
 
@@ -59,7 +59,7 @@ public:
   bool sendDataStream(const std::string *sourceNodeAddress, const std::string *targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize);
     
   // （7）从网络接收数据流中读取数据函数
-  uint32_t getReceiveDataStream(int *receiveDataStreamBuffer, uint32_t receiveDataStreamBufferSize);
+  uint32_t getReceiveDataStream(char *receiveDataStreamBuffer, uint32_t receiveDataStreamBufferSize);
 
 };
 

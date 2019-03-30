@@ -1,6 +1,8 @@
-QT += quick
+#QT += quick
 CONFIG += c++11
-
+CONFIG += staticlib
+TARGET = ebcNet
+TEMPLATE = lib
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked deprecated (the exact warnings
@@ -8,6 +10,7 @@ CONFIG += c++11
 # deprecated API in order to know how to port your code away from it.
 DEFINES += QT_DEPRECATED_WARNINGS
 DEFINES += ON_QT  #区分linux上的服务器程序与QT上的程序
+DEFINES += ebcNet_LIBRARY
 
 # You can also make your code fail to compile if you use deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -15,7 +18,6 @@ DEFINES += ON_QT  #区分linux上的服务器程序与QT上的程序
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    src/main.cpp \
     src/msg.pb.cpp \
     src/nodeid.cpp \
     src/node.cpp \
@@ -23,10 +25,10 @@ SOURCES += \
     src/netengine.cpp \
     src/msgpack.cpp \
     src/utils.cpp \
-    src/logsignal.cpp \
     src/search.cpp \
     src/ebcMP2PNetWorkAPI.cpp
-
+ #src/logsignal.cpp \
+#src/main.cpp \
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
@@ -35,7 +37,12 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 
 win32{
-    LIBS += -L$$PWD/lib/win -lprotobuf-lite -ludt -lebcCryptoLib -lQsLog2
+PRE_TARGETDEPS += $$PWD/lib/win/libudt.a
+PRE_TARGETDEPS += $$PWD/lib/win/libprotobuf-lite.a
+PRE_TARGETDEPS += $$PWD/lib/win/libebcCryptoLib.a
+PRE_TARGETDEPS += $$PWD/lib/win/libQsLog.a
+
+    LIBS += -L$$PWD/lib/win -lprotobuf-lite -ludt -lebcCryptoLib -lQsLog
     LIBS += -lws2_32 -lwsock32
 }
 
@@ -65,14 +72,14 @@ HEADERS += \
     include/msgpack.h \
     include/ebcCryptoLib.h \
     include/QsLog.h \
-    include/logsignal.h \
     include/nodeid.h \
     include/search.h \
     include/ebcCoreParameter.h \
     include/ebcCreateInfomationAPI.h \
     include/ebcMP2PNetWorkAPI.h
+    #include/logsignal.h \
 
 RESOURCES += \
-    qml.qrc
+#    qml.qrc
 
 DISTFILES +=
