@@ -37,7 +37,7 @@ Window
         id: rectangle
         anchors.horizontalCenter: parent.horizontalCenter
         width:  parent.width
-        height: parent.height*4/5
+        height: parent.height*3/4
         color: "#C7EDCC"
         clip: true
 
@@ -67,10 +67,37 @@ Window
         width: 330
         anchors.horizontalCenter: rectangle.horizontalCenter
         anchors.top: rectangle.bottom
-        anchors.bottom: start_btn.top
         maximumLength: 40
-}
+    }
 
+    TextField
+    {
+        id: data_stream
+        width: 330
+        anchors.horizontalCenter: rectangle.horizontalCenter
+        anchors.bottom: start_btn.top
+    }
+    Text
+    {
+        id: text1
+        height:node_id.height
+        anchors.right: node_id.left
+        anchors.top: rectangle.bottom
+        text: qsTr("search node id:")
+        font.pixelSize: 18
+        color: "blue"
+    }
+
+    Text
+    {
+        id: text2
+        height:node_id.height
+        anchors.right: data_stream.left
+        anchors.bottom: start_btn.top
+        text: qsTr("send data stream:")
+        font.pixelSize: 18
+        color:"green"
+    }
     Button
     {
         id: start_btn
@@ -98,6 +125,18 @@ Window
     }
     Button
     {
+        id: send_btn
+        anchors.bottom: parent.bottom
+        anchors.right: search_btn.left
+        text: "send"
+        onClicked:
+        {
+            console.log("send data stream to "+node_id.text)
+            log.sendData(node_id.text,data_stream.text)
+        }
+    }
+    Button
+    {
         id: clean_text_btn
         anchors.bottom: parent.bottom
         anchors.left: start_btn.right
@@ -111,11 +150,12 @@ Window
     {
         id: clean_search_btn
         anchors.bottom: parent.bottom
-        anchors.right: search_btn.left
-        text: "clean search"
+        anchors.right: send_btn.left
+        text: "clean"
         onClicked:
         {
-           node_id.text = ""
+            node_id.text = ""
+            data_stream.text = ""
         }
     }
     Button
@@ -128,7 +168,7 @@ Window
          text: ""
          onClicked:
          {
-             node_id.text = "*************    彩蛋彩蛋 (:D)    ******************"
+             node_id.text = "*****  彩蛋彩蛋 (:D)   还有一个彩蛋哦   *******"
          }
     }
     Button
@@ -140,8 +180,11 @@ Window
          text: ""
          onClicked:
          {
-             node_id.text = "************    彩蛋中的彩蛋 (:D)    *****************"
+             node_id.text = "************    彩蛋中的彩蛋 (:D) 真棒   *****************"
+             data_stream.text = "************    彩蛋中的彩蛋 (:D) 真棒   *****************"
          }
     }
+
+
 }
 

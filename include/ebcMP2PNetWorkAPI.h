@@ -41,7 +41,7 @@ public:
     ebcMP2PNetWorkAPI();
 	~ebcMP2PNetWorkAPI();
 	// （1）创建网络函数
-  bool createNetwork(const std::string *nodeAddress);
+  bool createNetwork(const char *nodeAddress);
    
   // （2）刷新网络函数
   bool updateNetwork();
@@ -50,13 +50,13 @@ public:
   void getNetworkTable(NETWORK_DOMAIN_TABLE *networkTable);
     
   // （4）加入一个指定的节点到网络函数
-  bool joinNodeToNetwork(const std::string *joinNodeAddress);
+  bool joinNodeToNetwork(const char *joinNodeAddress);
     
   // （5）断开网络中一个指定的节点函数
-  bool breakNodeFormNetwork(const std::string *breakNodeAddress);
+  bool breakNodeFormNetwork(const char *breakNodeAddress);
      
   // （6）由源地址发送数据流到目标地址函数
-  bool sendDataStream(const std::string *sourceNodeAddress, const std::string *targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize);
+  bool sendDataStream(const char *sourceNodeAddress, const char *targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize);
     
   // （7）从网络接收数据流中读取数据函数
   uint32_t getReceiveDataStream(char *receiveDataStreamBuffer, uint32_t receiveDataStreamBufferSize);

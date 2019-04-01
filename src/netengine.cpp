@@ -17,27 +17,49 @@ NetEngine::NetEngine(const NodeId _id,Sp<Bucket>_kad,const bool _isServer):self(
 
 void NetEngine::NetInit(const NodeId _id, Sp<Bucket> _kad, const bool _isServer)
 {
+    kad = _kad;
+    self = _id;
+    isServer = _isServer;
+
+#if 0
+    using namespace QsLogging;
+
+    // 1. init the logging mechanism
+    Logger& logger = Logger::instance();
+    logger.setLoggingLevel(QsLogging::TraceLevel);
+    const QString sLogPath("log.txt");
+
+    // 2. add two destinations
+    DestinationPtr fileDestination(DestinationFactory::MakeFileDestination(
+                sLogPath, EnableLogRotation, MaxSizeBytes(1), MaxOldLogCount(2)));
+    DestinationPtr debugDestination(DestinationFactory::MakeDebugOutputDestination());
+//	DestinationPtr functorDestination(DestinationFactory::MakeFunctorDestination(&logFunction));
+    logger.addDestination(debugDestination);
+    logger.addDestination(fileDestination);
+ //   logger.addDestination(functorDestination);
+#endif
+
+
     local_addr.sin_addr.s_addr = INADDR_ANY;
     local_addr.sin_port = 0;
     local_addr.sin_family = AF_INET;
     srch = std::make_shared<Search> (kad);
-    sbuf.resize(1024*1024);
     std::list<std::string> onlineNodeAddress{};//jian yue
 
     sendSearchNode = [&](Sp<Node> &dstNode, NodeId tId)
     {
-        char sbuf[1024]="";
+        char send_buf[1024]="";
         config::search searchNode;
         searchNode.set_isid(true);
         searchNode.set_tid(&tId,ID_LENGTH);
         msgPack sendMsg(self.getId());
-        int msg_len = sendMsg.pack(config::MsgType::GET_DATA, &searchNode, sbuf, sizeof(sbuf));//只传ID去
+        int msg_len = sendMsg.pack(config::MsgType::GET_DATA, &searchNode, send_buf, sizeof(send_buf));//只传ID去
         if(msg_len < 0)
         {
             QLOG_ERROR()<<"SendSearchNode msglen error";
             return ;
         }
-        int ret = UDT::sendmsg(dstNode->getSock(), sbuf, msg_len);
+        int ret = UDT::sendmsg(dstNode->getSock(), send_buf, msg_len);
         QLOG_WARN()<<"sendmsg to searchnode"<<ret;
     };
      sendFindNode = [&](Sp<Node> &dstNode, NodeId targetId)
@@ -54,10 +76,10 @@ void NetEngine::NetInit(const NodeId _id, Sp<Bucket> _kad, const bool _isServer)
 
 }
 
-void NetEngine::NetInit(const std::string *createNetworkNodeAddress)
+void NetEngine::NetInit(const std::string createNetworkNodeAddress)
 {
     NodeId id{};
-    id = createNetworkNodeAddress->substr(3, ID_LENGTH);
+    id = createNetworkNodeAddress.substr(3, ID_LENGTH);
     Sp<NET::Bucket>  kad = std::make_shared <NET::Bucket>(id);
     NetInit(id, kad);
 }
@@ -396,8 +418,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
 
                     if(kad->grow_time <= clock::now() - seconds(150))//mybucket加入新节点后150s再扩桶
                     {
-                        maintanence();
-                        //kad->bucketMaintenance(sendFindNode,true);//扩
+                        kad->bucketMaintenance(sendFindNode,true);//扩
                         QLOG_INFO()<<"send get_node for self maintenance";
                         kad->grow_time = clock::now();
                     }
@@ -412,6 +433,8 @@ bool NetEngine::sendUserData(NodeId tid, const char *data,const uint32_t sendDat
 {
 
     int sock = 0;
+    std::vector<char> sbuf;
+    sbuf.resize(1024*1024);
     Sp<Node> node = kad->getNode(tid);
     if(node.get() == nullptr)
         return false;
@@ -864,6 +887,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
     {
         auto& tmpStr = msg.ebcdata();
         userData.emplace_back(tmpStr);
+        QLOG_INFO()<<"L889 receive msg : "<<tmpStr.c_str();
         break;
     }
     default:
@@ -915,19 +939,15 @@ bool NetEngine::appendBucket(const Sp<Node> &node)
     return kad->onNewNode(node,2,isServer);//judge if appendbucket success
 }
 
-bool NetEngine::maintanence()
-{
-    return kad->bucketMaintenance(sendFindNode,true);
-}
 
-bool NetEngine::joinNetWork(const std::string *joinNetworkNodeAddress)
+bool NetEngine::joinNetWork(const std::string joinNetworkNodeAddress)
 {
     NET::NodeId sid{};
-    sid = joinNetworkNodeAddress->substr(3, ID_LENGTH);
+    sid = joinNetworkNodeAddress.substr(3, ID_LENGTH);
     return startSearch(sid);
 }
 
-bool NetEngine::getBucket()
+bool NetEngine::getBucket(std::list<std::string> &_bucketList)
 {
     for(auto &b : kad->buckets)
     {
@@ -935,16 +955,16 @@ bool NetEngine::getBucket()
         {
             if(!n->isExpired())
             {
-                onlineNodeTable.push_back("ebc" + n->getId().toString());//这里后四位加什么
+                _bucketList.push_back("ebc" + n->getId().toString());//这里后四位加什么
             }
         }
     }
 }
 
-bool NetEngine::eraseNode(const std::string *breakNetworkNodeAddress)
+bool NetEngine::eraseNode(const std::string breakNetworkNodeAddress)
 {
     NodeId sid{};
-    sid = breakNetworkNodeAddress->substr(3, ID_LENGTH);
+    sid = breakNetworkNodeAddress.substr(3, ID_LENGTH);
     Sp<Node> node = kad->getNode(sid);
     if(node == nullptr)
         return false;
@@ -957,21 +977,17 @@ bool NetEngine::eraseNode(const std::string *breakNetworkNodeAddress)
     return true;
 }
 
-const bool NetEngine::sendDataStream(const std::string *sourceNodeAddress, const std::string *targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize)
+bool NetEngine::sendDataStream(const std::string targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize)
 {
     if (sendDataStreamBufferSize > 1024*1024)
     {
         QLOG_ERROR()<<"Datasize out of range";
         return false;
     }
-    NodeId sid{},tid{};
-    sid = sourceNodeAddress->substr(3,ID_LENGTH);
-    tid = targetNodeAddress->substr(3,ID_LENGTH);
-    if(sid != self.getId())
-    {
-        QLOG_ERROR()<<"self id is wrong!";
-        return false;
-    }
+    NodeId tid(targetNodeAddress.substr(3,ID_LENGTH));
+    tid.printNodeId(true);
+
+    sendUserData(tid, sendDataStreamBuffer, sendDataStreamBufferSize);
 }
 
 void NetEngine::setNodeExpired(const UDTSOCKET &sock,bool isServer)

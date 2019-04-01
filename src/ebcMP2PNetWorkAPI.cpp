@@ -31,7 +31,7 @@ ebcMP2PNetWorkAPI::~ebcMP2PNetWorkAPI()
   输出参数：无
   返回参数：true-创建成功，false-创建失败
 */
-bool ebcMP2PNetWorkAPI::createNetwork(const std::string *createNetworkNodeAddress)
+bool ebcMP2PNetWorkAPI::createNetwork(const char *createNetworkNodeAddress)
 {
     engine.NetInit(createNetworkNodeAddress);
     engine.startClient();
@@ -46,7 +46,6 @@ bool ebcMP2PNetWorkAPI::createNetwork(const std::string *createNetworkNodeAddres
 */
 bool ebcMP2PNetWorkAPI::updateNetwork()
 {
-    engine.maintanence();
     return 1;
 }
 
@@ -58,9 +57,7 @@ bool ebcMP2PNetWorkAPI::updateNetwork()
 */
 void ebcMP2PNetWorkAPI::getNetworkTable(NETWORK_DOMAIN_TABLE *networkTable)
 {
-    engine.getBucket();
-    networkTable->onlineNodeNumber = engine.onlineNodeTable.size();
-    networkTable->onlineNodeAddress = engine.onlineNodeTable;
+    engine.getBucket(networkTable->onlineNodeAddress);
 }
 
 /*
@@ -71,7 +68,7 @@ void ebcMP2PNetWorkAPI::getNetworkTable(NETWORK_DOMAIN_TABLE *networkTable)
   返回参数：true-节点加入成功，false-节点加入失败
   备    注：可以指定一个节点加入到网络中来
 */
-bool ebcMP2PNetWorkAPI::joinNodeToNetwork(const std::string *joinNetworkNodeAddress)
+bool ebcMP2PNetWorkAPI::joinNodeToNetwork(const char *joinNetworkNodeAddress)
 {
     return engine.joinNetWork(joinNetworkNodeAddress);
 }
@@ -84,7 +81,7 @@ bool ebcMP2PNetWorkAPI::joinNodeToNetwork(const std::string *joinNetworkNodeAddr
   返回参数：true-固定节点断开成功，false-固定节点断开失败
   备    注：可以指定一个网络中的节点断开
 */
-bool ebcMP2PNetWorkAPI::breakNodeFormNetwork(const std::string *breakNetworkNodeAddress)
+bool ebcMP2PNetWorkAPI::breakNodeFormNetwork(const char *breakNetworkNodeAddress)
 {
     return engine.eraseNode(breakNetworkNodeAddress);
 
@@ -99,10 +96,9 @@ bool ebcMP2PNetWorkAPI::breakNodeFormNetwork(const std::string *breakNetworkNode
   输出参数：无
   返回参数：true-发送成功，false-发送失败
 */
-bool ebcMP2PNetWorkAPI::sendDataStream(const std::string *sourceNodeAddress, const std::string *targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize)
+bool ebcMP2PNetWorkAPI::sendDataStream(const char *sourceNodeAddress, const char *targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize)
 {
-    engine.sendDataStream(const std::string *sourceNodeAddress, const std::string *targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize)
-
+    engine.sendDataStream(targetNodeAddress, sendDataStreamBuffer, sendDataStreamBufferSize);
     return 0;
 }
 
@@ -118,7 +114,7 @@ uint32_t ebcMP2PNetWorkAPI::getReceiveDataStream(char *receiveDataStreamBuffer, 
     if(!engine.getUserDate(data))
         return 0;
 
-    memcmp(receiveDataStreamBuffer, data.data(), data.size());
+    memcpy(receiveDataStreamBuffer, data.data(), receiveDataStreamBufferSize);
     return 0;
 }
 

@@ -1,8 +1,8 @@
-#QT += quick
+QT += quick
 CONFIG += c++11
-CONFIG += staticlib
-TARGET = ebcNet
-TEMPLATE = lib
+#CONFIG += staticlib
+#TARGET = ebcNet
+#TEMPLATE = lib
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked deprecated (the exact warnings
@@ -26,9 +26,9 @@ SOURCES += \
     src/msgpack.cpp \
     src/utils.cpp \
     src/search.cpp \
-    src/ebcMP2PNetWorkAPI.cpp
- #src/logsignal.cpp \
-#src/main.cpp \
+    src/ebcMP2PNetWorkAPI.cpp\
+ src/logsignal.cpp \
+src/main.cpp
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
@@ -76,10 +76,10 @@ HEADERS += \
     include/search.h \
     include/ebcCoreParameter.h \
     include/ebcCreateInfomationAPI.h \
-    include/ebcMP2PNetWorkAPI.h
-    #include/logsignal.h \
+    include/ebcMP2PNetWorkAPI.h\
+    include/logsignal.h
 
 RESOURCES += \
-#    qml.qrc
+    qml.qrc
 
 DISTFILES +=

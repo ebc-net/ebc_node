@@ -19,7 +19,7 @@ public:
     NetEngine(const NodeId _id, Sp<Bucket>_kad,const bool _isServer = false);
     NetEngine(){}
     void NetInit(const NodeId _id, Sp<Bucket>_kad,const bool _isServer = false);
-    void NetInit(const std::string *createNetworkNodeAddress);
+    void NetInit(const std::string createNetworkNodeAddress);
     ~NetEngine();
     void startServer();
     void startClient(const std::string ip=SUPER_NODE, const uint16_t port=SRV_PORT);
@@ -35,12 +35,10 @@ public:
     void eraseNodeExpired(const UDTSOCKET& sock,bool isServer = false);
 
     bool getUserDate(std::string & data);
-    bool maintanence();
-    bool joinNetWork(const std::string *joinNetworkNodeAddress);
-    bool getBucket();
-    bool eraseNode(const std::string *breakNetworkNodeAddress);
-    const bool sendDataStream(const std::string *sourceNodeAddress, const std::string *targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize);
-    std::list<std::string> onlineNodeTable;
+    bool joinNetWork(const std::string joinNetworkNodeAddress);
+    bool getBucket(std::list<std::string> &_bucketList);
+    bool eraseNode(const std::string breakNetworkNodeAddress);
+    bool sendDataStream(const std::string targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize);
 
 
 
@@ -69,7 +67,6 @@ private:
     sendNode sendSearchNode;
     sendNode sendFindNode;
     std::function<void(NodeId tId, Node &sNode)> foundCallback;
-    std::vector<char> sbuf;
     std::list<std::string> userData;
 
 };

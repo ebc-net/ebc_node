@@ -103,11 +103,20 @@ int msgPack::unpack(const void *buf, int len)
             return -1;
         }
     }
-    else
+    else if(ebcMsg.has_msg())
     {
         if(ebcMsg.length() != ebcMsg.msg().ByteSizeLong())
         {
             QLOG_ERROR()<<" unpack get msg length error";
+            return -1;
+        }
+    }
+    else
+    {
+        if(ebcMsg.length() != ebcMsg.ebcdata().size())
+        {
+
+            QLOG_ERROR()<<"unpack recvdata length error";
             return -1;
         }
     }

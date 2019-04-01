@@ -18,6 +18,7 @@ public:
 
     Q_INVOKABLE void start();
     Q_INVOKABLE void searchId(QString );
+    Q_INVOKABLE void sendData(QString, QString);
 
     void passKad(NET::Sp<NET::Bucket> B,NET::NetEngine *E){ kad = B;eng = E;}
 
