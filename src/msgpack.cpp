@@ -95,31 +95,37 @@ int msgPack::unpack(const void *buf, int len)
         return -1;
     }
 
-    if(ebcMsg.has_nodes())
-    {
-        if(ebcMsg.length() != ebcMsg.nodes().ByteSizeLong())
-        {
-            QLOG_ERROR()<<"get msg length error";
-            return -1;
-        }
-    }
-    else if(ebcMsg.has_msg())
-    {
-        if(ebcMsg.length() != ebcMsg.msg().ByteSizeLong())
-        {
-            QLOG_ERROR()<<" unpack get msg length error";
-            return -1;
-        }
-    }
-    else
-    {
+    config::EbcMsg::BodyCase body = ebcMsg.body_case();
+    switch (body) {
+    case config::EbcMsg::kEbcdata :
         if(ebcMsg.length() != ebcMsg.ebcdata().size())
         {
 
             QLOG_ERROR()<<"unpack recvdata length error";
             return -1;
         }
+        break;
+    case config::EbcMsg::kMsg :
+        if(ebcMsg.length() != ebcMsg.msg().ByteSizeLong())
+        {
+            QLOG_ERROR()<<" unpack get msg length error";
+            return -1;
+        }
+        break;
+    case config::EbcMsg::kNodes :
+        if(ebcMsg.length() != ebcMsg.nodes().ByteSizeLong())
+        {
+            QLOG_ERROR()<<"get Nodes length error";
+            return -1;
+        }
+        break;
+    default:
+        {
+            QLOG_ERROR()<<" get Msg type error!";
+            return -1;
+        }
     }
+
     return 0;
 }
 
