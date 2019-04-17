@@ -132,7 +132,7 @@ bool Bucket::onNewNode(const Sp<Node>& node, int confirm, bool isServer)
 
     for (auto& n : b->nodes)
     {
-        if (n->getId() == node->getId())
+        if( (n->getId() == node->getId())&&(!node->isExpired()))
             return false;
     }
 

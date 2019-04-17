@@ -14,7 +14,6 @@ NodeId::NodeId(const std::string &str)
 std::string NodeId::toString()const
 {
     std::string str;
-    str.resize(ID_LENGTH);
     for(auto &i: *this)
         str.append(1,i);
     return str;
@@ -87,6 +86,18 @@ void NodeId::printNodeId(bool isExpire)const
     else
         QLOG_INFO()<<l_id.c_str();
 }
+
+//void NodeId::setIdTitle() const
+//{
+//    char tmp_id[2];
+//    std::string l_id;
+//    for(auto &i: *this)
+//    {
+//        sprintf(tmp_id,"%02x", i);
+//        l_id += tmp_id;
+//    }
+//    std::cout<<l_id.c_str()<<std::endl;
+//}
 
 bool NodeId::operator<(const NodeId &_id)
 {

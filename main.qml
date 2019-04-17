@@ -5,11 +5,6 @@ import QtQuick.Controls 2.4
 
 Window
 {
-    visible: true
-    width: 640
-    height: 480
-    title: qsTr("ebc")
-    color: "#C0C0C0"
 
     Connections
     {
@@ -31,7 +26,11 @@ Window
             }
         }
     }
-
+    visible: true
+    width: 640
+    height: 480
+    title: qsTr("ebc")
+    color: "#C0C0C0"
     Rectangle
     {
         id: rectangle
@@ -67,7 +66,7 @@ Window
         width: 330
         anchors.horizontalCenter: rectangle.horizontalCenter
         anchors.top: rectangle.bottom
-        maximumLength: 40
+        maximumLength: 48
     }
 
     TextField
@@ -132,7 +131,7 @@ Window
         onClicked:
         {
             console.log("send data stream to "+node_id.text)
-            log.sendData(node_id.text,data_stream.text)
+            log.sendData(node_id.text,data_stream.text,data_stream.text)
         }
     }
     Button
@@ -148,10 +147,23 @@ Window
     }
     Button
     {
+        id: selfid
+        anchors.bottom: parent.bottom
+        anchors.left: clean_text_btn.right
+        text: "selfId"
+        onClicked:
+        {
+
+            console.log("My ID ")
+            log.printSelfId()
+        }
+    }
+    Button
+    {
         id: clean_search_btn
         anchors.bottom: parent.bottom
         anchors.right: send_btn.left
-        text: "clean"
+        text: "cleanSearch"
         onClicked:
         {
             node_id.text = ""
@@ -184,7 +196,5 @@ Window
              data_stream.text = "************    彩蛋中的彩蛋 (:D) 真棒   *****************"
          }
     }
-
-
 }
 

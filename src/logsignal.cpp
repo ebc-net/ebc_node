@@ -42,11 +42,15 @@ void logSignal::searchId(QString _id)
     tid.printNodeId();
     eng->startSearch(tid);
 }
-void logSignal::sendData(QString _id, QString _data)
+void logSignal::sendData(QString _id, QString _data,QString _num)
 {
+    char* end;
+    int num  = static_cast<int>(strtol(_num.toStdString().c_str(),&end,10));
+    QLOG_WARN()<<"num = "<<num;
     NET::NodeId tid;
     const std::string id = _id.toStdString();
-    const std::string data = _data.toStdString();
+    //std::string data = _data.toStdString();
+    std::string data;
     int ii = 0;
 
     for(int i = 0 ; i<ID_LENGTH*2-1; i+=2)
@@ -72,10 +76,23 @@ void logSignal::sendData(QString _id, QString _data)
 
     char id1[27] = "ebc";
     memcpy(id1+3, tid.data(), ID_LENGTH);
-
+    data.resize(num,'1');
     eng->sendDataStream(id1, data.c_str(), data.size());//size 问题
     QLOG_INFO()<<"send data stream to";
     tid.printNodeId();
 }
+
+void logSignal::printSelfId()
+{
+    QLOG_ERROR()<<"Self ID : ";
+    eng->self.getId().printNodeId(1);
+}
+
+void logSignal::receiveData()
+{
+    QLOG_ERROR()<<"receive data:";
+
+}
+
 
 #endif

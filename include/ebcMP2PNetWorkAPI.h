@@ -16,11 +16,7 @@
 #include <stdint.h>
 #include "ebcCoreParameter.h"
 #include"netengine.h"
-//#include "bucket.h"
 #include "QsLog.h"
-//#include "node.h"
-
-//#include "ebcCoreAPI.h"
 
 // 定义网络数据结构A
 #define NETWORK_NODE_NUMBER  1500                                        // MP2P网络域最大组网节点数
@@ -39,10 +35,13 @@ private:
 NET::NetEngine engine;
 public:
     ebcMP2PNetWorkAPI();
-	~ebcMP2PNetWorkAPI();
+    ~ebcMP2PNetWorkAPI();
 	// （1）创建网络函数
   bool createNetwork(const char *nodeAddress);
-   
+
+  // （1）创建网络函数
+void closeNetwork();
+
   // （2）刷新网络函数
   bool updateNetwork();
 
@@ -60,7 +59,8 @@ public:
     
   // （7）从网络接收数据流中读取数据函数
   uint32_t getReceiveDataStream(char *receiveDataStreamBuffer, uint32_t receiveDataStreamBufferSize);
-
+  // （9）读取接收数据包消息函数
+  uint16_t getReceiveDataPackageMessage();
 };
 
 /*** end of file **************************************************************/

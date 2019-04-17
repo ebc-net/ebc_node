@@ -39,7 +39,7 @@ public:
     bool getBucket(std::list<std::string> &_bucketList);
     bool eraseNode(const std::string breakNetworkNodeAddress);
     bool sendDataStream(const std::string targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize);
-
+    int  getUserDataListSize();
 
 
 private:
@@ -62,13 +62,14 @@ private:
     time_point maintenanceTime;
     time_point searchTime;
     time_point expireTime;
-    char buf[6*1024]="";
+    char *buf;
 
     sendNode sendSearchNode;
     sendNode sendFindNode;
     std::function<void(NodeId tId, Node &sNode)> foundCallback;
     std::list<std::string> userData;
 
+    int initCount;
 };
 }
 

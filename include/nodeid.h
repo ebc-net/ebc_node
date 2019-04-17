@@ -14,6 +14,7 @@ public:
     int xorCmp( const NodeId& _id1, const NodeId& _id2)const;
     unsigned int commBit(const NodeId&)const;
     void printNodeId(bool isExpire = false)const;
+   // void setIdTitle()const;
     bool operator <  (const NodeId & _id);
     bool operator == (const NodeId & _id);
 
