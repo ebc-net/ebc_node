@@ -10,7 +10,7 @@
 #endif
 namespace NET
 {
-NetEngine::NetEngine(const NodeId _id,Sp<Bucket>_kad,const bool _isServer):self(_id), kad(_kad),isServer(_isServer)
+NetEngine::NetEngine(const NodeId _id, Sp<Bucket>_kad, const bool _isServer): self(_id), kad(_kad), isServer(_isServer)
 {
     NetInit(_id, _kad, _isServer);
 }
@@ -21,14 +21,14 @@ void NetEngine::NetInit(const NodeId _id, Sp<Bucket> _kad, const bool _isServer)
     if(initCount++)
         return ;
 
-    buf = new char[1024*101];
+    buf = new char[1024 * 101];
     kad = _kad;
 
     self = _id;
     self.getId().printNodeId();
     isServer = _isServer;
 
-#if 1
+#if 0
     using namespace QsLogging;
 
     // 1. init the logging mechanism
@@ -38,7 +38,7 @@ void NetEngine::NetInit(const NodeId _id, Sp<Bucket> _kad, const bool _isServer)
 
     // 2. add two destinations
     DestinationPtr fileDestination(DestinationFactory::MakeFileDestination(
-                sLogPath, EnableLogRotation, MaxSizeBytes(1), MaxOldLogCount(2)));
+                                       sLogPath, EnableLogRotation, MaxSizeBytes(1), MaxOldLogCount(2)));
     DestinationPtr debugDestination(DestinationFactory::MakeDebugOutputDestination());
     //DestinationPtr functorDestination(DestinationFactory::MakeFunctorDestination(&logFunction));
     logger.addDestination(debugDestination);
@@ -54,25 +54,25 @@ void NetEngine::NetInit(const NodeId _id, Sp<Bucket> _kad, const bool _isServer)
 
     sendSearchNode = [&](Sp<Node> &dstNode, NodeId tId)
     {
-        char send_buf[1024]="";
+        char send_buf[1024] = "";
         config::search searchNode;
         searchNode.set_isid(true);
-        searchNode.set_tid(&tId,ID_LENGTH);
+        searchNode.set_tid(&tId, ID_LENGTH);
         msgPack sendMsg(self.getId());
         int msg_len = sendMsg.pack(config::MsgType::GET_DATA, &searchNode, send_buf, sizeof(send_buf));//只传ID去
         if(msg_len < 0)
         {
-            QLOG_ERROR()<<"SendSearchNode msglen error";
+            QLOG_ERROR() << "SendSearchNode msglen error";
             return ;
         }
         int ret = UDT::sendmsg(dstNode->getSock(), send_buf, msg_len);
-        QLOG_WARN()<<"sendmsg to searchnode"<<ret;
+        QLOG_WARN() << "sendmsg to searchnode" << ret;
     };
 
     sendFindNode = [&](Sp<Node> &dstNode, NodeId targetId)
     {
-        char fbuf[1024]="";
-         config::EbcNode targetNode;
+        char fbuf[1024] = "";
+        config::EbcNode targetNode;
         targetNode.set_id(targetId.toString());
         msgPack sendMsg(self.getId());
         int msg_len = sendMsg.pack(config::MsgType::GET_NODE, &targetNode, fbuf, sizeof(fbuf));//只传ID去
@@ -88,7 +88,7 @@ void NetEngine::NetInit(const std::string createNetworkNodeAddress)
     NodeId id{};
     id = createNetworkNodeAddress.substr(3, ID_LENGTH);
     printf("test the netinit id :\n");
-    std::cout<<"dsds"<<std::endl;
+    std::cout << "dsds" << std::endl;
 //      for (int i = 0; i < 24; i++)
 //      {
 //          printf("%02x",id.toString().at(i));
@@ -119,10 +119,10 @@ NetEngine::~NetEngine()
 
 void NetEngine::startServer()
 {
-    expireTime =clock::now() + seconds(300);
+    expireTime = clock::now() + seconds(300);
     if(self.getId().empty())
     {
-        QLOG_ERROR()<<"Server net start fail: Id is empty";
+        QLOG_ERROR() << "Server net start fail: Id is empty";
         return ;
     }
     isServer = true;
@@ -138,7 +138,7 @@ void NetEngine::startServer()
         int ret = 0;
         std::set<UDTSOCKET> readfds;
         std::set<UDTSOCKET> errfds;
-        event = UDT_EPOLL_IN|UDT_EPOLL_ERR;//Readable|Error
+        event = UDT_EPOLL_IN | UDT_EPOLL_ERR; //Readable|Error
 
         int sock_len = sizeof(struct sockaddr);
         struct sockaddr_in srv_addr, client;
@@ -149,73 +149,73 @@ void NetEngine::startServer()
         setUdtOpt(srv);
         if(UDT::bind(srv, (struct sockaddr*)&srv_addr, sizeof(srv_addr)) < 0)
         {
-            QLOG_ERROR()<<"UDT bind server error"<<UDT::getlasterror().getErrorMessage();
+            QLOG_ERROR() << "UDT bind server error" << UDT::getlasterror().getErrorMessage();
             return ;
         }
 
         if(UDT::listen(srv, 10000) < 0)
         {
-            QLOG_ERROR()<<"UDT listen server error"<<UDT::getlasterror().getErrorMessage();
+            QLOG_ERROR() << "UDT listen server error" << UDT::getlasterror().getErrorMessage();
             return ;
         }
         UDT::epoll_add_usock(epollFd, srv, &event);
         while(server_thread_flag)
         {
             //the wait only listen srv's socket and its return of client's socket
-            ret = UDT::epoll_wait(epollFd, &readfds, nullptr, &errfds, 5*1000);
+            ret = UDT::epoll_wait(epollFd, &readfds, nullptr, &errfds, 5 * 1000);
 
             if(ret < 0)
             {
-                QLOG_ERROR()<<"UDT epoll_wait error"<<UDT::getlasterror().getErrorMessage();
+                QLOG_ERROR() << "UDT epoll_wait error" << UDT::getlasterror().getErrorMessage();
                 return ;
             }
             else if(ret > 0)
             {
-                for(auto& sock:errfds)//Heartbeat fail!
+                for(auto& sock : errfds) //Heartbeat fail!
                 {
                     //Error
-                    int state=0;
+                    int state = 0;
                     int len = sizeof(state);
                     UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);
                     //the srv has no state = CONNECTING ,as it should not connect.
                     if(CLOSED == state || BROKEN == state )
                     {
-                        QLOG_INFO()<<"client disconnected";
+                        QLOG_INFO() << "client disconnected";
                         UDT::epoll_remove_usock(epollFd, sock);
                         UDT::close(sock);
-                        setNodeExpired(sock,true);
-                        eraseNodeExpired(sock,true);
+                        setNodeExpired(sock, true);
+                        eraseNodeExpired(sock, true);
                     }
                 }
-                for(auto& sock:readfds)//readable ,have msg come
+                for(auto& sock : readfds) //readable ,have msg come
                 {
                     if(sock == srv) //client connects success!
                     {
                         if((cli = UDT::accept(srv, (struct sockaddr*)&client, &sock_len)) < 0)
                         {
-                            QLOG_ERROR()<<"UDT accept error"<<UDT::getlasterror().getErrorMessage();
+                            QLOG_ERROR() << "UDT accept error" << UDT::getlasterror().getErrorMessage();
                             continue;
                         }
 
-                        QLOG_INFO()<<"peer info:"<<inet_ntoa(client.sin_addr)<<"@"<<ntohs(client.sin_port);
-                        QLOG_INFO()<<"cli = "<<cli;
+                        QLOG_INFO() << "peer info:" << inet_ntoa(client.sin_addr) << "@" << ntohs(client.sin_port);
+                        QLOG_INFO() << "cli = " << cli;
                         //这里要不要设置cli这个socket的属性，还是说cli会继承srv套接字的属性
                         UDT::epoll_add_usock(epollFd, cli, &event);
                     }
                     else
                     {
                         //msg of client
-                        int state=0;
+                        int state = 0;
                         int len = sizeof(state);
                         UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);//shut down
                         //the srv has no state = CONNECTING ,as it should not connect.
                         if(CLOSED == state || BROKEN == state )
                         {
-                            QLOG_INFO()<<"client disconnected";
+                            QLOG_INFO() << "client disconnected";
                             UDT::epoll_remove_usock(epollFd, sock);
                             UDT::close(sock);
-                            setNodeExpired(sock,true);
-                            eraseNodeExpired(sock,true);
+                            setNodeExpired(sock, true);
+                            eraseNodeExpired(sock, true);
                             continue;
                         }
                         //recieve and handle msg
@@ -231,7 +231,7 @@ void NetEngine::startServer()
             }
         }
     }
-    );
+                        );
     server.detach();
 }
 
@@ -242,7 +242,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
     boot_sock = UDT::socket(AF_INET, SOCK_DGRAM, 0);
     if(boot_sock < 0)
     {
-        QLOG_ERROR()<<"UDT socket error"<<UDT::getlasterror().getErrorMessage();
+        QLOG_ERROR() << "UDT socket error" << UDT::getlasterror().getErrorMessage();
         return ;
     }
 
@@ -254,17 +254,17 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
     setUdtOpt(boot_sock);
     if(UDT::bind(boot_sock, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0)
     {
-        QLOG_ERROR()<<"UDT bind error"<<UDT::getlasterror().getErrorMessage();
+        QLOG_ERROR() << "UDT bind error" << UDT::getlasterror().getErrorMessage();
         return ;
     }
 
     int sock_len = sizeof(local_addr);
     if(UDT::getsockname(boot_sock, (struct sockaddr *)&local_addr, &sock_len) < 0)//获取本地地址，正确返回0。
     {
-        QLOG_ERROR()<<"UDT getsockname error"<<UDT::getlasterror().getErrorMessage();
+        QLOG_ERROR() << "UDT getsockname error" << UDT::getlasterror().getErrorMessage();
         return ;
     }
-    QLOG_INFO()<<"local port = "<<ntohs(local_addr.sin_port);
+    QLOG_INFO() << "local port = " << ntohs(local_addr.sin_port);
 
     boot_thread_flag = true;
     boot_thread = std::thread([&, srv_addr]()  //lambda 表达式
@@ -272,40 +272,40 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
     {
         if(UDT::connect(boot_sock, (struct sockaddr *)&srv_addr, sizeof(srv_addr)) < 0)
         {
-            QLOG_ERROR()<<"UDT boot socket connect error"<<UDT::getlasterror().getErrorMessage();
+            QLOG_ERROR() << "UDT boot socket connect error" << UDT::getlasterror().getErrorMessage();
             return ;
         }
 
-        QLOG_INFO()<<"srv info"<<inet_ntoa(srv_addr.sin_addr)<<"@"<<htons(srv_addr.sin_port);
-        char cbuf[1024]="";
+        QLOG_INFO() << "srv info" << inet_ntoa(srv_addr.sin_addr) << "@" << htons(srv_addr.sin_port);
+        char cbuf[1024] = "";
         epollFd = UDT::epoll_create();
         int event = 0 ;
         int ret = 0;
-        int state=0;
+        int state = 0;
         int len = sizeof(state);
 
         std::set<UDTSOCKET> readfds, writefds, errfds;
 
         /*监听套接字的可写，错误*/
-        event = UDT_EPOLL_OUT|UDT_EPOLL_ERR;
+        event = UDT_EPOLL_OUT | UDT_EPOLL_ERR;
         UDT::epoll_add_usock(epollFd, boot_sock, &event);
 
         while(boot_thread_flag)
         {
-            ret = UDT::epoll_wait(epollFd, &readfds, &writefds, &errfds, 1*1000);
+            ret = UDT::epoll_wait(epollFd, &readfds, &writefds, &errfds, 1 * 1000);
 
             //程序关闭时，直接退出
             if(!boot_thread_flag)
                 return ;
             if(ret < -1)
             {
-                QLOG_ERROR()<<"UDT epoll_wait error"<<UDT::getlasterror().getErrorMessage();
+                QLOG_ERROR() << "UDT epoll_wait error" << UDT::getlasterror().getErrorMessage();
                 return ;
             }
             else if(ret > 0)
             {
 
-                for(auto& sock:errfds)
+                for(auto& sock : errfds)
                 {
                     // UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);
                     //QLOG_INFO()<<"in errfds state = "<<state;
@@ -314,7 +314,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
                     {
                         //如果是服务器连接失败，则做重连动作  TODO
                         //UDT有问题，不能连续连接 注意一下
-                        QLOG_ERROR()<<"server connect error! re-connecting...";
+                        QLOG_ERROR() << "server connect error! re-connecting...";
                         //此处封装一层，SOCK关掉重连
                         //if(UDT::connect(boot_sock, (struct sockaddr *)&srv_addr, sizeof(srv_addr)) < 0)
                         //{
@@ -326,7 +326,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
                     }
                     else
                     {
-                        QLOG_ERROR()<<"peer connect error1 sock="<<sock;
+                        QLOG_ERROR() << "peer connect error1 sock=" << sock;
                         sockNodePair[sock]->getId().printNodeId(true);
                         UDT::close(sock);
                         setNodeExpired(sock);
@@ -334,9 +334,9 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
                     }
                 }
                 /*可写，这里表示connect连接状态, 在套接字可写后，获取套接字的状态，根据不同的状态可以知道socket的连接状态*/
-                for(auto& sock:writefds)
+                for(auto& sock : writefds)
                 {
-                    event = UDT_EPOLL_IN|UDT_EPOLL_ERR;
+                    event = UDT_EPOLL_IN | UDT_EPOLL_ERR;
                     UDT::epoll_remove_usock(epollFd, sock);
                     UDT::epoll_add_usock(epollFd, sock, &event);
 
@@ -354,25 +354,25 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
                     else
                     {
                         //连接对端节点成功，则将改节点的socket记录,将此节点加入K桶
-                        QLOG_INFO()<<"peer node connect success!";
+                        QLOG_INFO() << "peer node connect success!";
                         Sp<Node>& node = sockNodePair[sock];//记录UDT套接字与节点ID的对应关系，方便通过UDTSOCKET快速找到ID
                         auto tid = idTidPair.find(node->getId());
                         if(tid != idTidPair.end())
                         {
                             srch->addSearchNode(node, tid->second);
-                            srch->searchStep(tid->second, sendSearchNode,1);
+                            srch->searchStep(tid->second, sendSearchNode, 1);
                         }
                         if(!appendBucket(node))//if appendBucket failed,close the sock and remove it.
                         {
                             UDT::epoll_remove_usock(epollFd, sock);
                             UDT::close(sock);
                             sockNodePair.erase(sock);
-                            QLOG_ERROR()<<"ADD BUCKET FAILED";
+                            QLOG_ERROR() << "ADD BUCKET FAILED";
                         }
                     }
                 }
                 /*有消息达到*/
-                for(auto& sock:readfds)
+                for(auto& sock : readfds)
                 {
                     UDT::getsockopt(sock, 0, UDT_STATE, &state, &len);
                     /*这个时候的失败一般是之前连接上了，但是中间连接断开了*/
@@ -380,13 +380,13 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
                     {
                         if(sock == boot_sock)
                         {
-                            QLOG_ERROR()<<"Srv is down!";//服务器下线~
+                            QLOG_ERROR() << "Srv is down!"; //服务器下线~
                             UDT::epoll_remove_usock(epollFd, sock);
                             continue;
 
                         }
                         UDT::epoll_remove_usock(epollFd, sock);
-                        QLOG_ERROR()<<"client connect error, ID is :";
+                        QLOG_ERROR() << "client connect error, ID is :";
                         sockNodePair[sock]->getId().printNodeId(true);
                         UDT::close(sock);
                         //失效
@@ -402,10 +402,10 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
 
             if(searchTime <= clock::now())
             {
-                for (auto it = srch->searches.begin(); it !=srch->searches.end(); it++)
+                for (auto it = srch->searches.begin(); it != srch->searches.end(); it++)
                 {
                     if(!it->done && ((it->step_time + seconds(2)) <= clock::now()))//6s before
-                        srch->searchStep(it, sendSearchNode,1);
+                        srch->searchStep(it, sendSearchNode, 1);
                     time_point tm ;
                     if(!it->done)
                         tm = it->step_time + seconds(5);
@@ -416,19 +416,19 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
 
             if(clock::now() >= maintenanceTime)
             {
-                if( kad->bucketMaintenance( sendFindNode,false ))//neighbour=false 桶维护
+                if( kad->bucketMaintenance( sendFindNode, false )) //neighbour=false 桶维护
                 {
-                    maintenanceTime = clock::now()+ seconds(5);
-                    QLOG_INFO()<<"send get_node for bucket maintenance";
+                    maintenanceTime = clock::now() + seconds(5);
+                    QLOG_INFO() << "send get_node for bucket maintenance";
                 }
                 else
                 {
-                    maintenanceTime = clock::now()+ seconds(60);
+                    maintenanceTime = clock::now() + seconds(60);
 
                     if(kad->grow_time <= clock::now() - seconds(150))//mybucket加入新节点后150s再扩桶
                     {
-                        kad->bucketMaintenance(sendFindNode,true);//扩
-                        QLOG_INFO()<<"send get_node for self maintenance";
+                        kad->bucketMaintenance(sendFindNode, true); //扩
+                        QLOG_INFO() << "send get_node for self maintenance";
                         kad->grow_time = clock::now();
                     }
                 }
@@ -438,31 +438,31 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
     boot_thread.detach();
 }
 
-bool NetEngine::sendUserData(NodeId tid, const char *data,const uint32_t sendDataStreamBufferSize)
+bool NetEngine::sendUserData(NodeId tid, const char *data, const uint32_t sendDataStreamBufferSize)
 {
     int sock = 0;
     std::vector<char> sbuf;
-    sbuf.resize(1024*1024);
+    sbuf.resize(1024 * 1024);
     Sp<Node> node = kad->getNode(tid);
     if(node.get() == nullptr)
         return false;
 
     sock = node->getSock();
     msgPack send_msg(self.getId());
-    int ret = send_msg.pack(config::MsgType::SENDDATASTREAM, data, sbuf.data(), sbuf.size(),config::MsgSubType::EMPTY_SUB,sendDataStreamBufferSize);
+    int ret = send_msg.pack(config::MsgType::SENDDATASTREAM, data, sbuf.data(), sbuf.size(), config::MsgSubType::EMPTY_SUB, sendDataStreamBufferSize);
     if(ret < 0)
         return false;
-    ret =UDT::sendmsg(sock,sbuf.data(),ret);
-    if(ret<0)
+    ret = UDT::sendmsg(sock, sbuf.data(), ret);
+    if(ret < 0)
         return false;
     return true;
 }
 
 bool NetEngine::startSearch(NodeId tId)//传tid进来
 {
-    foundCallback = [&](NodeId tId, Node &sNode)
+    foundCallback = [&](NodeId tId, Node & sNode)
     {
-        QLOG_WARN()<<"Find the search Node :";
+        QLOG_WARN() << "Find the search Node :";
         tId.printNodeId();
         //        QLOG_WARN()<<"Find in the Node:";
         //        sNode.getId().printNodeId();
@@ -470,10 +470,10 @@ bool NetEngine::startSearch(NodeId tId)//传tid进来
     if(tId == self.getId())
     {
         return true;
-        QLOG_WARN()<<"Find the search Node :It is myself Id";
+        QLOG_WARN() << "Find the search Node :It is myself Id";
     }
     else
-        return srch->dhtSearch(tId,foundCallback,sendSearchNode) ? true : false ;
+        return srch->dhtSearch(tId, foundCallback, sendSearchNode) ? true : false ;
 }
 
 void NetEngine::setUdtOpt(const UDTSOCKET &sock)//srv
@@ -481,26 +481,26 @@ void NetEngine::setUdtOpt(const UDTSOCKET &sock)//srv
     bool opt = false;
     if(UDT::setsockopt(sock, 0, UDT_SNDSYN, &opt, sizeof(opt)) < 0)//etsockopt对套接字进行设置// if sending is blocking
     {
-        QLOG_ERROR()<<"UDT set SNDSYN fail"<<UDT::getlasterror().getErrorMessage();
+        QLOG_ERROR() << "UDT set SNDSYN fail" << UDT::getlasterror().getErrorMessage();
         return ;
     }
 
     if(UDT::setsockopt(sock, 0, UDT_RCVSYN, &opt, sizeof(opt)) < 0)
     {
-        QLOG_ERROR()<<"UDT set RCVSYN fail"<<UDT::getlasterror().getErrorMessage();
+        QLOG_ERROR() << "UDT set RCVSYN fail" << UDT::getlasterror().getErrorMessage();
         return ;
     }
 
-    int size = 2*1024*1024;
+    int size = 2 * 1024 * 1024;
     if(UDT::setsockopt(sock, 0, UDT_SNDBUF, &size, sizeof(size)) < 0)
     {
-        QLOG_ERROR()<<"UDT set SNDBUF fail"<<UDT::getlasterror().getErrorMessage();
+        QLOG_ERROR() << "UDT set SNDBUF fail" << UDT::getlasterror().getErrorMessage();
         return ;
     }
 
     if(UDT::setsockopt(sock, 0, UDT_RCVBUF, &size, sizeof(size)) < 0)
     {
-        QLOG_ERROR()<<"UDT set RCVBUF fail"<<UDT::getlasterror().getErrorMessage();
+        QLOG_ERROR() << "UDT set RCVBUF fail" << UDT::getlasterror().getErrorMessage();
         return ;
     }
 
@@ -509,15 +509,15 @@ void NetEngine::setUdtOpt(const UDTSOCKET &sock)//srv
     int s_size = sizeof(int);
     if(UDT::getsockopt(sock, 0, UDP_RCVBUF, &size, &s_size) < 0)
     {
-        QLOG_ERROR()<<"UDT set RCVBUF fail"<<UDT::getlasterror().getErrorMessage();
+        QLOG_ERROR() << "UDT set RCVBUF fail" << UDT::getlasterror().getErrorMessage();
         return ;
     }
-    QLOG_INFO()<<"udp buf size = "<<size;
+    QLOG_INFO() << "udp buf size = " << size;
 
-    size = 2*1024*1024;
+    size = 2 * 1024 * 1024;
     if(UDT::setsockopt(sock, 0, UDP_RCVBUF, &size, sizeof(size)) < 0)
     {
-        QLOG_ERROR()<<"UDT set RCVBUF fail"<<UDT::getlasterror().getErrorMessage();
+        QLOG_ERROR() << "UDT set RCVBUF fail" << UDT::getlasterror().getErrorMessage();
         return ;
     }
 #endif
@@ -529,20 +529,21 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
     msgPack recv_msg(self.getId());
     int ret = UDT::recvmsg(sock, buf, BUFSIZE);
     //QLOG_WARN()<<"handlemsg recv ret = "<<ret;
-    if(ret<0)
+    if(ret < 0)
     {
 //        QLOG_ERROR()<<"recv client msg error: "<<UDT::getlasterror_desc()<<"ERROR code"<<UDT::getlasterror_code();
         return ;
     }
     if(recv_msg.unpack(buf, ret) < 0)//解包失败
     {
-        QLOG_ERROR()<<"parse msg fail";
+        QLOG_ERROR() << "parse msg fail";
         return ;
     }
 
     auto& msg = recv_msg.ebcMsg;
-   // QLOG_WARN()<<"type:"<<msg.type();
-    switch (msg.type()) {
+    // QLOG_WARN()<<"type:"<<msg.type();
+    switch (msg.type())
+    {
     case  config::MsgType::GET_NODE :
     {
         config::EbcNodes nodes;  //此处到复制到最终的msg里面可能存在多次拷贝，可能存在性能消耗，后期关注一下
@@ -566,26 +567,26 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                 break;
             //开始查找节点并发送打洞信息
             NodeId cli_id(msg.src_id());
-            if((kad->getNode(cli_id).get()!= nullptr)&&(!kad->getNode(cli_id)->isExpired()))
-                    break;
+            if((kad->getNode(cli_id).get() != nullptr) && (!kad->getNode(cli_id)->isExpired()))
+                break;
 
             std::list<Sp<Node>> sendnodes = kad->repNodes(cli_id);
-            QLOG_WARN()<<"rep node num= "<<sendnodes.size();
-            for(auto &node:sendnodes)
+            QLOG_WARN() << "rep node num= " << sendnodes.size();
+            for(auto &node : sendnodes)
             {
                 auto tmp = nodes.add_ebcnodes();
-                tmp->set_id(&node->getId(),ID_LENGTH);
+                tmp->set_id(&node->getId(), ID_LENGTH);
                 tmp->set_ip(node->getAddr().getIPv4().sin_addr.s_addr);
-                tmp->set_port_nat(comPortNat(node->getAddr().getIPv4().sin_port,node->getNatType()));
-                ret = UDT::sendmsg(node->getSock(),buf,ret);
-                QLOG_WARN()<<"PUNCH ret = "<<ret;
+                tmp->set_port_nat(comPortNat(node->getAddr().getIPv4().sin_port, node->getNatType()));
+                ret = UDT::sendmsg(node->getSock(), buf, ret);
+                QLOG_WARN() << "PUNCH ret = " << ret;
                 node->getId().printNodeId(1);
             }
             //把对方节点加入服务器的K桶
             Sp<Node> clinode = std::make_shared<Node> (cli_id);
             clinode->setAddr((struct sockaddr*)&clientInfo);
             clinode->setSock(sock);
-            sockNodePairSrv[sock]= clinode;
+            sockNodePairSrv[sock] = clinode;
             appendBucket(clinode);
         }
         else //peer收到GET_NODE后的动作
@@ -608,18 +609,18 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
             NodeId targetId(msg.nodes().ebcnodes(0).id());
 
             //此处需要修改，查找当间cli_id所在桶的所有节点
-            auto targetnodes = kad->findClosestNodes(targetId,8);
-            for (auto &node:targetnodes)
+            auto targetnodes = kad->findClosestNodes(targetId, 8);
+            for (auto &node : targetnodes)
             {
                 //filter sender node in the reply list
-                if(node->getId()== NodeId(msg.src_id()))
+                if(node->getId() == NodeId(msg.src_id()))
                     continue;
 
                 auto tmp = nodes.add_ebcnodes();
-                tmp->set_id(&node->getId(),ID_LENGTH);
+                tmp->set_id(&node->getId(), ID_LENGTH);
                 tmp->set_ip(node->getAddr().getIPv4().sin_addr.s_addr);
-                tmp->set_port_nat(comPortNat(node->getAddr().getIPv4().sin_port,node->getNatType()));
-                UDT::sendmsg(node->getSock(),buf,ret);
+                tmp->set_port_nat(comPortNat(node->getAddr().getIPv4().sin_port, node->getNatType()));
+                UDT::sendmsg(node->getSock(), buf, ret);
             }
         }
 
@@ -631,10 +632,10 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
         break;
     }
 
-        //收到查询命令，找到该节点，或者返回3个最近的节点
+    //收到查询命令，找到该节点，或者返回3个最近的节点
     case  config::MsgType::GET_DATA :
     {
-        QLOG_WARN()<<"RCV GET_DATA";
+        QLOG_WARN() << "RCV GET_DATA";
         config::search datanodes;//返回结果
         auto msgNode = kad->getNode(msg.src_id());//发送消息的节点
         memset(buf, 0, BUFSIZE);
@@ -654,25 +655,25 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
         {
             auto node = kad->getNode(searchId);
             auto tmp = nodes.add_ebcnodes();
-            tmp->set_id(&(node->getId()),ID_LENGTH);
+            tmp->set_id(&(node->getId()), ID_LENGTH);
             tmp->set_ip(node->getAddr().getIPv4().sin_addr.s_addr);
-            tmp->set_port_nat(comPortNat(node->getAddr().getIPv4().sin_port,node->getNatType()));
-            ret = UDT::sendmsg(node->getSock(),buf,ret);
+            tmp->set_port_nat(comPortNat(node->getAddr().getIPv4().sin_port, node->getNatType()));
+            ret = UDT::sendmsg(node->getSock(), buf, ret);
         }
         else
         {
             auto targetnodes = kad->findClosestNodes(searchId, 3);//查找最近的3个节点回复回去
-            QLOG_ERROR()<<"REP closest node number ="<<targetnodes.size();
+            QLOG_ERROR() << "REP closest node number =" << targetnodes.size();
 
-            for (auto &node:targetnodes)
+            for (auto &node : targetnodes)
             {
-                if(node->getId()==msgNode->getId())
+                if(node->getId() == msgNode->getId())
                     continue;//如果找到的id和发送端相同则过滤掉,不能自己给自己打洞.
                 auto tmp = nodes.add_ebcnodes();
-                tmp->set_id(&(node->getId()),ID_LENGTH);
+                tmp->set_id(&(node->getId()), ID_LENGTH);
                 tmp->set_ip(node->getAddr().getIPv4().sin_addr.s_addr);
-                tmp->set_port_nat(comPortNat(node->getAddr().getIPv4().sin_port,node->getNatType()));
-                UDT::sendmsg(node->getSock(),buf,ret);
+                tmp->set_port_nat(comPortNat(node->getAddr().getIPv4().sin_port, node->getNatType()));
+                UDT::sendmsg(node->getSock(), buf, ret);
             }
         }
         datanodes.mutable_nodes()->CopyFrom(nodes);
@@ -680,7 +681,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
         ret = recv_msg.pack(config::MsgType::REP, &datanodes, buf, BUFSIZE, config::MsgSubType::DATA);
         if(ret < 0)
             return ;
-        UDT::sendmsg(sock,buf,ret);
+        UDT::sendmsg(sock, buf, ret);
         break;
     }
     case config::MsgType::REP ://此处需要把接收的服务器发来的节点进行打洞  此处不需要改动
@@ -691,7 +692,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
             config::EbcNode node;
             int node_count = nodes.ebcnodes_size();
             // QLOG_WARN()<<"get reply nodes number :"<<node_count;
-            for(int i=0; i<node_count; ++i)
+            for(int i = 0; i < node_count; ++i)
             {
                 node = nodes.ebcnodes(i);
 
@@ -699,7 +700,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                 // NodeId(node.id()).printNodeId();
                 if(NodeId(node.id()) == self.getId())
                 {
-                    QLOG_WARN()<<"filter self success!";
+                    QLOG_WARN() << "filter self success!";
                     continue;
                 }
 
@@ -714,10 +715,10 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                 else
                 {
                     auto here = std::find_if(sockNodePair.begin(), sockNodePair.end(),
-                                             [&tId](std::map<UDTSOCKET, Sp<Node>>::value_type &socknodes)
+                                             [&tId](std::map<UDTSOCKET, Sp<Node>>::value_type & socknodes)
                     {
-                            return socknodes.second->getId()== tId;
-                });
+                        return socknodes.second->getId() == tId;
+                    });
                     if(here != sockNodePair.end())
                         continue;
                 }
@@ -732,12 +733,12 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                 peer_addr.sin_port = parPort(node.port_nat());
                 peer_addr.sin_family = AF_INET;
                 lNode->setAddr((struct sockaddr*)&peer_addr);
-                sockNodePair[sock]= lNode;
+                sockNodePair[sock] = lNode;
             }
         }
         else if(config::MsgSubType::DATA == msg.sub_type())
         {
-            QLOG_WARN()<<"!!!!!!!!!!";//1
+            QLOG_WARN() << "!!!!!!!!!!"; //1
             config::search sr = msg.msg();
             config::EbcNode node;
             NodeId tid(sr.tid());
@@ -745,16 +746,16 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
             auto tidsr = srch->findSearchList(sr.tid());
             if(tidsr == srch->searches.end())//正常来说不会出现
             {
-                QLOG_ERROR()<<"the searchlist is not exist";
+                QLOG_ERROR() << "the searchlist is not exist";
                 return ;
             }
-            QLOG_WARN()<<"check done"<<tidsr->done;
+            QLOG_WARN() << "check done" << tidsr->done;
             if(tidsr->done)
                 break;
             /***** find the reply node and set some properties *****/
             NodeId srcId(msg.src_id());
             srcId.printNodeId();//2
-            for(auto&n :tidsr->searchNodes)
+            for(auto&n : tidsr->searchNodes)
             {
                 if(n.node->getId() == srcId)
                 {
@@ -765,27 +766,27 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                 }
             }
             bool haveSent = false;
-            for(int i = 0; i<node_count; i++)
+            for(int i = 0; i < node_count; i++)
             {
                 node = sr.nodes().ebcnodes(i);
-                QLOG_ERROR()<<"rep_data list:";//3
+                QLOG_ERROR() << "rep_data list:"; //3
                 NodeId (node.id()).printNodeId(true);//4
 
 
                 /***** find if the node in the bucket *****/
                 auto n = kad->getNode(node.id());
-                if(n.get()!=nullptr && !n->isExpired())//think about it :if the node has relay to add bucket
+                if(n.get() != nullptr && !n->isExpired()) //think about it :if the node has relay to add bucket
                 {
 
-                    srch->addSearchNode(n,tid);
+                    srch->addSearchNode(n, tid);
                     if(!haveSent)
                     {
-                        for(auto& sn:tidsr->searchNodes)
+                        for(auto& sn : tidsr->searchNodes)
                         {
                             /// QLOG_WARN()<<"707required times = "<<sn.requiredTimes<<"replied = "<<sn.replied;
                             if((!sn.replied) && (sn.requiredTimes < 3) && (sn.requestTime < (clock::now() - seconds(2))))
                             {
-                                QLOG_WARN()<<"next";
+                                QLOG_WARN() << "next";
                                 sn.node->getId().printNodeId();
                                 sendSearchNode(sn.node, NodeId(sr.tid()));
                                 sn.requestTime = clock::now();
@@ -799,10 +800,10 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                 }
                 /***** if the node is punching *****/
                 auto here = std::find_if(sockNodePair.begin(), sockNodePair.end(),
-                                         [&node](std::map<UDTSOCKET, Sp<Node>>::value_type &socknodes)
+                                         [&node](std::map<UDTSOCKET, Sp<Node>>::value_type & socknodes)
                 {
-                        return socknodes.second->getId() == NodeId(node.id());
-            });
+                    return socknodes.second->getId() == NodeId(node.id());
+                });
                 if(here != sockNodePair.end())
                 {
                     idTidPair[node.id()] = sr.tid();
@@ -811,7 +812,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
 
                 idTidPair[node.id()] = sr.tid();
                 UDTSOCKET sock = UDT::INVALID_SOCK;
-                sock = startPunch(epollFd, node.ip(),parPort(node.port_nat()));
+                sock = startPunch(epollFd, node.ip(), parPort(node.port_nat()));
                 if(sock == UDT::INVALID_SOCK)
                     continue;
                 Sp<Node> lNode = std::make_shared<Node>(node.id());
@@ -821,27 +822,27 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                 peer_addr.sin_port = parPort(node.port_nat());
                 peer_addr.sin_family = AF_INET;
                 lNode->setAddr((struct sockaddr*)&peer_addr);
-                sockNodePair[sock]= lNode;
+                sockNodePair[sock] = lNode;
                 if(NodeId(node.id()) == NodeId(sr.tid()))
                 {
                     tidsr->done = true;
                     auto test = srch->findSearchList(sr.tid());
 
-                    QLOG_WARN()<<"rep get the tid ,set done = "<<test->done;
+                    QLOG_WARN() << "rep get the tid ,set done = " << test->done;
                     test->tid.printNodeId();
-                    foundCallback(NodeId(sr.tid()),*lNode);
+                    foundCallback(NodeId(sr.tid()), *lNode);
                     break;
                 }
 
                 //call futher search
                 if(!haveSent)
                 {
-                    for(auto& sn:tidsr->searchNodes)
+                    for(auto& sn : tidsr->searchNodes)
                     {
                         //QLOG_WARN()<<"763required times = "<<sn.requiredTimes<<"replied = "<<sn.replied;
-                        if((!sn.replied) &&(sn.requiredTimes < 3) && (sn.requestTime < (clock::now() - seconds(2))))
+                        if((!sn.replied) && (sn.requiredTimes < 3) && (sn.requestTime < (clock::now() - seconds(2))))
                         {
-                            QLOG_WARN()<<"next";
+                            QLOG_WARN() << "next";
                             sn.node->getId().printNodeId();
                             sendSearchNode(sn.node, NodeId(sr.tid()));
                             sn.requestTime = clock::now();
@@ -874,10 +875,10 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
         else
         {
             auto here = std::find_if(sockNodePair.begin(), sockNodePair.end(),
-                                     [&tId](std::map<UDTSOCKET, Sp<Node>>::value_type &socknodes)
+                                     [&tId](std::map<UDTSOCKET, Sp<Node>>::value_type & socknodes)
             {
-                    return socknodes.second->getId()== tId;
-        });
+                return socknodes.second->getId() == tId;
+            });
             if(here != sockNodePair.end())
                 break;
         }
@@ -891,10 +892,10 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
         peer_addr.sin_port = parPort(node.port_nat());
         peer_addr.sin_family = AF_INET;
         lNode->setAddr((struct sockaddr*)&peer_addr);
-        sockNodePair[sock]= lNode;
+        sockNodePair[sock] = lNode;
         //此处是否也需要将对方先加入自己桶
     }
-        break;
+    break;
     case config::MsgType::SENDDATASTREAM:
     {
         auto& tmpStr = msg.ebcdata();
@@ -915,7 +916,7 @@ int NetEngine::startPunch(int& epollFd, uint32_t ip, uint16_t port)//对端的IP
     // QLOG_ERROR()<<"PUNCH SOCK="<<sock;
     if(UDT::INVALID_SOCK == sock)
     {
-        QLOG_ERROR()<<"create new UDT sock error: "<<UDT::getlasterror_desc();
+        QLOG_ERROR() << "create new UDT sock error: " << UDT::getlasterror_desc();
         return UDT::INVALID_SOCK;
     }
 
@@ -930,14 +931,14 @@ int NetEngine::startPunch(int& epollFd, uint32_t ip, uint16_t port)//对端的IP
 
     if(UDT::bind(sock, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0)
     {
-        QLOG_ERROR()<<"UDT punch bind error"<<UDT::getlasterror_desc()<<" code : "<<UDT::getlasterror_code();
+        QLOG_ERROR() << "UDT punch bind error" << UDT::getlasterror_desc() << " code : " << UDT::getlasterror_code();
         UDT::close(sock);
         return UDT::INVALID_SOCK;
     }
 
     if(UDT::connect(sock, (struct sockaddr*)&peer_addr, sizeof(peer_addr)) < 0)
     {
-        QLOG_ERROR()<<"UDT connect error"<<UDT::getlasterror().getErrorMessage();
+        QLOG_ERROR() << "UDT connect error" << UDT::getlasterror().getErrorMessage();
         UDT::close(sock);
         return UDT::INVALID_SOCK;
     }
@@ -949,7 +950,7 @@ int NetEngine::startPunch(int& epollFd, uint32_t ip, uint16_t port)//对端的IP
 //void NetEngine::appendBucket(const Sp<Node> &node)
 bool NetEngine::appendBucket(const Sp<Node> &node)
 {
-    return kad->onNewNode(node,2,isServer);//judge if appendbucket success
+    return kad->onNewNode(node, 2, isServer); //judge if appendbucket success
 }
 
 
@@ -985,19 +986,19 @@ bool NetEngine::eraseNode(const std::string breakNetworkNodeAddress)
     node->setExpired();
     UDT::epoll_remove_usock(epollFd, sock);
     UDT::close(sock);
-    setNodeExpired(sock,true);
-    eraseNodeExpired(sock,true);
+    setNodeExpired(sock, true);
+    eraseNodeExpired(sock, true);
     return true;
 }
 
 bool NetEngine::sendDataStream(const std::string targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize)
 {
-    if (sendDataStreamBufferSize > 1024*1024)
+    if (sendDataStreamBufferSize > 1024 * 1024)
     {
-        QLOG_ERROR()<<"Datasize out of range";
+        QLOG_ERROR() << "Datasize out of range";
         return false;
     }
-    NodeId tid(targetNodeAddress.substr(3,ID_LENGTH));
+    NodeId tid(targetNodeAddress.substr(3, ID_LENGTH));
     tid.printNodeId(true);
 
     sendUserData(tid, sendDataStreamBuffer, sendDataStreamBufferSize);
@@ -1010,10 +1011,10 @@ int NetEngine::getUserDataListSize()
     return userData.size();
 }
 
-void NetEngine::setNodeExpired(const UDTSOCKET &sock,bool isServer)
+void NetEngine::setNodeExpired(const UDTSOCKET &sock, bool isServer)
 {
-    auto iter = isServer?sockNodePairSrv.find(sock):sockNodePair.find(sock);
-    if(iter!=(isServer?sockNodePairSrv.end():sockNodePair.end()))
+    auto iter = isServer ? sockNodePairSrv.find(sock) : sockNodePair.find(sock);
+    if(iter != (isServer ? sockNodePairSrv.end() : sockNodePair.end()))
     {
         Sp<Node>& epnode = iter->second;
         epnode->setExpired();
@@ -1025,13 +1026,13 @@ void NetEngine::eraseNodeExpired(const UDTSOCKET &sock, bool isServer)
     if(isServer)
     {
         auto iter = sockNodePairSrv.find(sock);
-        if(iter!= sockNodePairSrv.end())
+        if(iter != sockNodePairSrv.end())
             sockNodePairSrv.erase(sock);
     }
     else
     {
         auto iter = sockNodePairSrv.find(sock);
-        if(iter!= sockNodePairSrv.end())
+        if(iter != sockNodePairSrv.end())
             sockNodePairSrv.erase(sock);
     }
 }

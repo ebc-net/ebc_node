@@ -8,7 +8,6 @@
 #include<iostream>
 #include <string.h>
 #include "netengine.h"
-#include "ebcCryptoLib.h"
 #include "bucket.h"
 
 #include "QsLog.h"
@@ -42,34 +41,35 @@ printNodeFun printNode;
 
 void signal_handler(int sig)
 {
-    switch(sig) {
-        case SIGHUP:
-            break;
-        case SIGUSR1:
-            printNode(0);
-            break;
-        case SIGUSR2:
-            printNode(1);
-            break;
-        case SIGINT:
-        case SIGTERM:
-            QLOG_ERROR()<<"ebc was killed!";
-            exit(0);
-            break;
+    switch(sig)
+    {
+    case SIGHUP:
+        break;
+    case SIGUSR1:
+        printNode(0);
+        break;
+    case SIGUSR2:
+        printNode(1);
+        break;
+    case SIGINT:
+    case SIGTERM:
+        QLOG_ERROR() << "ebc was killed!";
+        exit(0);
+        break;
     }
 }
 
 void setupSignals()
 {
-    signal(SIGCHLD,SIG_IGN); /* ignore child */
-    signal(SIGTSTP,SIG_IGN); /* ignore tty signals */
-    signal(SIGTTOU,SIG_IGN);
-    signal(SIGTTIN,SIG_IGN);
-    signal(SIGHUP,signal_handler); /* catch hangup signal */
-    signal(SIGINT,signal_handler); /* catch interrupt signal */
-    signal(SIGTERM,signal_handler); /* catch kill signal */
-    signal(SIGUSR1,signal_handler); /* catch kill signal */
-    signal(SIGUSR2,signal_handler); /* catch kill signal */
+    signal(SIGCHLD, SIG_IGN); /* ignore child */
+    signal(SIGTSTP, SIG_IGN); /* ignore tty signals */
+    signal(SIGTTOU, SIG_IGN);
+    signal(SIGTTIN, SIG_IGN);
+    signal(SIGHUP, signal_handler); /* catch hangup signal */
+    signal(SIGINT, signal_handler); /* catch interrupt signal */
+    signal(SIGTERM, signal_handler); /* catch kill signal */
+    signal(SIGUSR1, signal_handler); /* catch kill signal */
+    signal(SIGUSR2, signal_handler); /* catch kill signal */
 }
 
 void daemonize()
@@ -81,7 +81,8 @@ void daemonize()
     umask(0);
 
     pid_t sid = setsid();
-    if (sid < 0) {
+    if (sid < 0)
+    {
         exit(EXIT_FAILURE);
     }
 
@@ -95,8 +96,17 @@ void daemonize()
 
 #endif
 
-using namespace NET;
+void getRandom(unsigned char *buf, int len)
+{
+    std::mt19937 rd(std::chrono::system_clock::now().time_since_epoch().count());
+    std::uniform_int_distribution<char> rb(0);
+    for(int i = 0; i < len; i++)
+    {
+        buf[i] = rb(rd);
+    }
+}
 
+using namespace NET;
 int main(int argc, char *argv[])
 {
 #ifdef ON_QT
@@ -119,7 +129,7 @@ int main(int argc, char *argv[])
 
     // 2. add two destinations
     DestinationPtr fileDestination(DestinationFactory::MakeFileDestination(
-                sLogPath, EnableLogRotation, MaxSizeBytes(512), MaxOldLogCount(2)));
+                                       sLogPath, EnableLogRotation, MaxSizeBytes(512), MaxOldLogCount(2)));
     DestinationPtr debugDestination(DestinationFactory::MakeDebugOutputDestination());
     DestinationPtr functorDestination(DestinationFactory::MakeFunctorDestination(&logFunction));
     logger.addDestination(debugDestination);
@@ -131,16 +141,11 @@ int main(int argc, char *argv[])
     QLOG_INFO() << "Program started ";
 #endif
     NET::NodeId id;
-    id.at(0)=1;
-    id.at(1)=2;
-    id.at(2)=3;
-    id.at(22)=4;
- std::string a = id.toString();
- NodeId idtest(a);
-//    ebcCryptoLib cl;
-//    cl.randomNbytes(id.data(), ID_LENGTH);
-    QLOG_WARN()<<"test the to string id";
-    idtest.printNodeId(1);
+    getRandom(id.data(), 27);
+    id.at(0) = 'e';
+    id.at(1) = 'b';
+    id.at(2) = 'c';
+
     Sp<NET::Bucket> kad = std::make_shared <Bucket>(id);
     NET::NetEngine net(id, kad);
     //服务器或是客户机的K桶
@@ -162,64 +167,64 @@ int main(int argc, char *argv[])
     {
         net.startServer();
         //net.startClient();
-        std::thread cmd= std::thread([&net,&id,&cl,&kad]()
-                {
-                //接收用户输入命令线程
-                QLOG_INFO()<<"Usege: ";
-                QLOG_INFO()<<"0: Print all node info";
-                QLOG_INFO()<<"q: quit the app";
+        std::thread cmd = std::thread([&net, &id, &cl, &kad]()
+        {
+            //接收用户输入命令线程
+            QLOG_INFO() << "Usege: ";
+            QLOG_INFO() << "0: Print all node info";
+            QLOG_INFO() << "q: quit the app";
 
-                char c=0;
-                while((c=getchar()) != 'q')
-                {
+            char c = 0;
+            while((c = getchar()) != 'q')
+            {
                 switch(c)
                 {
                 case '0':
-                kad->dump(0);
-                break;
+                    kad->dump(0);
+                    break;
                 case '1':
-                kad->dump(1);
-                break;
+                    kad->dump(1);
+                    break;
                 case '3':
-                cl.randomNbytes(id.data(), ID_LENGTH);
-                QLOG_INFO()<<"search id = ";
-                id.printNodeId();
-                net.startSearch(id);
-                break;
+                    cl.randomNbytes(id.data(), ID_LENGTH);
+                    QLOG_INFO() << "search id = ";
+                    id.printNodeId();
+                    net.startSearch(id);
+                    break;
                 case '\n':
                     break;
                 default:
-                QLOG_ERROR()<<"invalid cmd!";
-                break;
+                    QLOG_ERROR() << "invalid cmd!";
+                    break;
                 }
-                }
-                }
-        );
+            }
+        }
+                                     );
 
         cmd.join();
     }
     return 0;
 #else
-    lg.passKad(kad,&net);
+    lg.passKad(kad, &net);
     net.startClient();
     std::thread recvThread = std::thread([&]()
     {
-         std::string buf;
-          while(1)
-          {
-              int ret = net.getUserDate(buf);
-              if(ret)
-              {
+        std::string buf;
+        while(1)
+        {
+            int ret = net.getUserDate(buf);
+            if(ret)
+            {
 
-                  std::cout<<"main:ret = "<<ret<<"value = "<<buf<<std::endl;
-                  std::cout<<"value len = "<<buf.size()<<std::endl;
+                std::cout << "main:ret = " << ret << "value = " << buf << std::endl;
+                std::cout << "value len = " << buf.size() << std::endl;
 //                  QLOG_WARN()<<"ret = "<<ret;
 //                  QLOG_WARN()<<"main:value len = "<<buf.size();
-              }
-              Sleep(5000);
-              buf.clear();
+            }
+            Sleep(5000);
+            buf.clear();
 
-          }
+        }
 
     });
     recvThread.detach();
