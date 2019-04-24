@@ -4,6 +4,7 @@
 #include <vector>
 #include <map>
 #include <thread>
+//#include <QNetworkConfigurationManager>
 
 #include "msgpack.h"
 #include "bucket.h"
@@ -29,16 +30,17 @@ public:
     void sendHello();
     bool startSearch(NodeId tId);
     int epollFd;  //
-    std::map<UDTSOCKET, Sp<Node>> sockNodePair;  //客户端
+
     Sp<Bucket> kad;//服务器或是客户机的K桶
     Node self;   //本节点的信息
     void setNodeExpired(const UDTSOCKET& sock, bool isServer = false);
     void eraseNodeExpired(const UDTSOCKET& sock, bool isServer = false);
 
     bool getUserDate(std::string & data);
-    bool joinNetWork(const std::string joinNetworkNodeAddress);
+    bool joinNetwork(const std::string joinNetworkNodeAddress);
     bool getBucket(std::list<std::string> &_bucketList);
     bool eraseNode(const std::string breakNetworkNodeAddress);
+    bool eraseNode(NodeId tId);
     bool sendDataStream(const std::string targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize);
     int  getUserDataListSize();
 
@@ -57,6 +59,7 @@ private:
     bool isServer{false};        //是否作为服务器
     std::thread server;   //服务器线程(后期可能改为单独进程),当节点有成为服务器节点的可能时，启动此线程
     bool server_thread_flag;
+    std::map<UDTSOCKET, Sp<Node>> sockNodePair;  //客户端
     std::map<UDTSOCKET, Sp<Node>> sockNodePairSrv;  //服务器
     std::map<NodeId, NodeId> idTidPair; //存id和searchlist中tid的对应关系
     sockaddr_in local_addr ;
@@ -69,8 +72,10 @@ private:
     sendNode sendFindNode;
     std::function<void(NodeId tId, Node &sNode)> foundCallback;
     std::list<std::string> userData;
+    std::list<Sp<Node>> blacklist;//黑名单，即被删除的节点，需要过滤
 
     int initCount{0};
+   // QNetworkConfigurationManager ebcNetConfig;
 };
 }
 

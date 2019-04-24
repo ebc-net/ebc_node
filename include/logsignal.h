@@ -21,6 +21,7 @@ public:
     Q_INVOKABLE void sendData(QString, QString,QString);
     Q_INVOKABLE void printSelfId();
     Q_INVOKABLE void receiveData();
+    Q_INVOKABLE void deleteNode(QString );
 
 
     void passKad(NET::Sp<NET::Bucket> B,NET::NetEngine *E){ kad = B;eng = E;}

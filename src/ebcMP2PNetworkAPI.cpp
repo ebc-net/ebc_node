@@ -11,17 +11,17 @@
   (C) Copyright 2019  Right Chain Technolegy Corp., LTD.
 */
 
-#include "ebcMP2PNetWorkAPI.h"
+#include "ebcMP2PNetworkAPI.h"
 
 
 
 
 // MP2P网络与通讯模块接口函数类
-ebcMP2PNetWorkAPI::ebcMP2PNetWorkAPI()
+ebcMP2PNetworkAPI::ebcMP2PNetworkAPI()
 {
 }
 
-ebcMP2PNetWorkAPI::~ebcMP2PNetWorkAPI()
+ebcMP2PNetworkAPI::~ebcMP2PNetworkAPI()
 {
 //    engine.~NetEngine();
 }
@@ -32,12 +32,10 @@ ebcMP2PNetWorkAPI::~ebcMP2PNetWorkAPI()
   输出参数：无
   返回参数：true-创建成功，false-创建失败
 */
-bool ebcMP2PNetWorkAPI::createNetwork(const char *createNetworkNodeAddress)
+bool ebcMP2PNetworkAPI::createNetwork(const char *createNetworkNodeAddress)
 {
-//    printf("test the ID wang send:\n");
-//    for (int i = 0; i < 27; i++)
-//        printf("%02x", 0xff&&createNetworkNodeAddress[i]);
-//    printf("\n");
+    if(initCount++)
+        return 0;
     std::string tmp_Id(createNetworkNodeAddress,ID_LENGTH+3);
     engine.NetInit(tmp_Id);
     engine.startClient();
@@ -50,7 +48,7 @@ bool ebcMP2PNetWorkAPI::createNetwork(const char *createNetworkNodeAddress)
   输出参数：无
   返回参数：true-网络表有刷新，false-网络表无刷新
 */
-bool ebcMP2PNetWorkAPI::updateNetwork()
+bool ebcMP2PNetworkAPI::updateNetwork()
 {
     return 1;
 }
@@ -61,7 +59,7 @@ bool ebcMP2PNetWorkAPI::updateNetwork()
   输出参数：networkTable-结构数据，MP2P域网络表
   返回参数：无
 */
-void ebcMP2PNetWorkAPI::getNetworkTable(NETWORK_DOMAIN_TABLE *networkTable)
+void ebcMP2PNetworkAPI::getNetworkTable(NETWORK_DOMAIN_TABLE *networkTable)
 {
     engine.getBucket(networkTable->onlineNodeAddress);
 }
@@ -74,11 +72,11 @@ void ebcMP2PNetWorkAPI::getNetworkTable(NETWORK_DOMAIN_TABLE *networkTable)
   返回参数：true-节点加入成功，false-节点加入失败
   备    注：可以指定一个节点加入到网络中来
 */
-bool ebcMP2PNetWorkAPI::joinNodeToNetwork(const char *joinNetworkNodeAddress)
+bool ebcMP2PNetworkAPI::joinNodeToNetwork(const char *joinNetworkNodeAddress)
 {
 
     std::string tmp_Id(joinNetworkNodeAddress,ID_LENGTH+3);
-    return engine.joinNetWork(tmp_Id);
+    return engine.joinNetwork(tmp_Id);
 }
 
 /*
@@ -89,7 +87,7 @@ bool ebcMP2PNetWorkAPI::joinNodeToNetwork(const char *joinNetworkNodeAddress)
   返回参数：true-固定节点断开成功，false-固定节点断开失败
   备    注：可以指定一个网络中的节点断开
 */
-bool ebcMP2PNetWorkAPI::breakNodeFormNetwork(const char *breakNetworkNodeAddress)
+bool ebcMP2PNetworkAPI::breakNodeFromNetwork(const char *breakNetworkNodeAddress)
 {
     std::string tmp_Id(breakNetworkNodeAddress,ID_LENGTH+3);
     return engine.eraseNode(tmp_Id);
@@ -105,7 +103,7 @@ bool ebcMP2PNetWorkAPI::breakNodeFormNetwork(const char *breakNetworkNodeAddress
   输出参数：无
   返回参数：true-发送成功，false-发送失败
 */
-bool ebcMP2PNetWorkAPI::sendDataStream(const char *sourceNodeAddress, const char *targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize)
+bool ebcMP2PNetworkAPI::sendDataStream(const char *sourceNodeAddress, const char *targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize)
 {   
 //    printf("send data : \n");
 //    for (int i = 0;i<sendDataStreamBufferSize;i++)
@@ -125,7 +123,7 @@ bool ebcMP2PNetWorkAPI::sendDataStream(const char *sourceNodeAddress, const char
   输出参数：receiveDataStreamBuffer-字符型数据，读取的数据流数据
   返回参数：实际读出的数据流字节数
 */
-uint32_t ebcMP2PNetWorkAPI::getReceiveDataStream(char *receiveDataStreamBuffer, uint32_t receiveDataStreamBufferSize)
+uint32_t ebcMP2PNetworkAPI::getReceiveDataStream(char *receiveDataStreamBuffer, uint32_t receiveDataStreamBufferSize)
 {	
 //    printf("start receive\n");
     std::string data;
@@ -136,7 +134,7 @@ uint32_t ebcMP2PNetWorkAPI::getReceiveDataStream(char *receiveDataStreamBuffer, 
     return len;
 }
 
-uint16_t ebcMP2PNetWorkAPI::getReceiveDataPackageMessage()
+uint16_t ebcMP2PNetworkAPI::getReceiveDataPackageMessage()
 {
     return engine.getUserDataListSize();
 }

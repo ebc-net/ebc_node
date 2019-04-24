@@ -132,7 +132,8 @@ bool Bucket::onNewNode(const Sp<Node>& node, int confirm, bool isServer)
 
     for (auto& n : b->nodes)
     {
-        if( (n->getId() == node->getId())&&(!node->isExpired()))
+//        if( (n->getId() == node->getId())&&(!node->isExpired()))
+        if( (n->getId() == node->getId())&&(!n->isExpired()))
             return false;
     }
 
@@ -176,7 +177,7 @@ bool Bucket::findNode(const NodeId &id)
     auto it = findBucket(id);
     for (auto & n : it->nodes)
     {
-        if(id == n->getId())
+        if((id == n->getId())&&(!n->isExpired()))
             return true;
     }
     return false;
@@ -187,7 +188,7 @@ Sp<Node> Bucket::getNode(const NodeId &id)
     auto it = findBucket(id);
     for (auto & n : it->nodes)
     {
-        if(id == n->getId())
+        if((id == n->getId())&&(!n->isExpired()))
             return n;
     }
     return nullptr;
@@ -443,7 +444,6 @@ std::list<Sp<Node>> Bucket::repNodes(const NodeId &id)
                     insertOtherOne(2);
                     kIs1 = true;
                 }
-
             }
         }
         id_first[bit / 8] &= (0xfe << (7 - bit % 8));

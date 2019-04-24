@@ -28,14 +28,15 @@ typedef struct NETWORK_DOMAIN_TABLE
 }NetworkDomainTable;
 
 // MP2P网络与通讯模块接口函数类
-class ebcMP2PNetWorkAPI
+class ebcMP2PNetworkAPI
 {
 
 private:
 NET::NetEngine engine;
+int initCount = 0;
 public:
-    ebcMP2PNetWorkAPI();
-    ~ebcMP2PNetWorkAPI();
+    ebcMP2PNetworkAPI();
+    ~ebcMP2PNetworkAPI();
 	// （1）创建网络函数
   bool createNetwork(const char *nodeAddress);
 
@@ -52,7 +53,7 @@ void closeNetwork();
   bool joinNodeToNetwork(const char *joinNodeAddress);
     
   // （5）断开网络中一个指定的节点函数
-  bool breakNodeFormNetwork(const char *breakNodeAddress);
+  bool breakNodeFromNetwork(const char *breakNodeAddress);
      
   // （6）由源地址发送数据流到目标地址函数
   bool sendDataStream(const char *sourceNodeAddress, const char *targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize);

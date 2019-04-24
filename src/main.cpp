@@ -141,10 +141,10 @@ int main(int argc, char *argv[])
     QLOG_INFO() << "Program started ";
 #endif
     NET::NodeId id;
-    getRandom(id.data(), 27);
-    id.at(0) = 'e';
-    id.at(1) = 'b';
-    id.at(2) = 'c';
+    getRandom(id.data(), 24);
+//    id.at(0) = 'e';
+//    id.at(1) = 'b';
+//    id.at(2) = 'c';
 
     Sp<NET::Bucket> kad = std::make_shared <Bucket>(id);
     NET::NetEngine net(id, kad);

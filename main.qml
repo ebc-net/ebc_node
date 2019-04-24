@@ -160,6 +160,18 @@ Window
     }
     Button
     {
+        id: deletenode
+        anchors.bottom: parent.bottom
+        anchors.left: selfid.right
+        text: "delete"
+        onClicked:
+        {
+            console.log("delete   "+node_id.text)
+            log.deleteNode(node_id.text)
+        }
+    }
+    Button
+    {
         id: clean_search_btn
         anchors.bottom: parent.bottom
         anchors.right: send_btn.left

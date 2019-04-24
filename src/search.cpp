@@ -10,7 +10,7 @@ namespace NET
 Search::Searches::iterator Search::findSearchList(const NodeId &tid)
 {
     decltype (searches.begin()) it ,itd = searches.end();
-    for(it = searches.begin();it != searches.end();it ++)
+    for(it = searches.begin() ;it != searches.end();it ++)
     {
         if(it->tid == tid )
         {
@@ -18,6 +18,7 @@ Search::Searches::iterator Search::findSearchList(const NodeId &tid)
         }
         if(it->done && (itd == searches.end()))
         {
+          //  QLOG_WARN()<<"test findsearchlist 2";
             itd = it;
         }
     }
@@ -47,9 +48,9 @@ bool Search::addSearchNode(Sp<Node> &node, NodeId tid)
     {
         if(n.node == node)
         {
-            QLOG_INFO()<<"add the same node";
-            QLOG_WARN()<<"check the replied"<<n.replied;
-            node->getId().printNodeId();
+            //QLOG_INFO()<<"add the same node";
+            //QLOG_WARN()<<"check the replied"<<n.replied;
+            //node->getId().printNodeId();
             return true;
         }
     }
@@ -83,7 +84,7 @@ int Search::dhtSearch(NodeId tid, std::function<void (NodeId, Node &snode)> call
         if(!n->isExpired())
         {
             callback(tid,*(n.get()));
-            return 1;//成功返回0
+            return 1;//成功返回1
         }
     }
 
@@ -99,6 +100,7 @@ int Search::dhtSearch(NodeId tid, std::function<void (NodeId, Node &snode)> call
         }
         // new search reset.
         it->done = 0;
+       // QLOG_WARN()<<"5 set done false 1";
         it->step_time = clock::now();
         it->tid =tid;
 
@@ -129,10 +131,17 @@ int Search::dhtSearch(NodeId tid, std::function<void (NodeId, Node &snode)> call
         n->getId().printNodeId(1);
         if(!addSearchNode(n,tid))
             return -1;
-
     }
     searchStep(tid,send,3);//m=3
-    return 1;
+    Sleep(3000);
+    if(kad->findNode(tid))
+    {
+        if(!kad->getNode(tid)->isExpired())
+        return 1;
+    }
+    else
+        return 0;
+
 }
 void Search::searchStep(NodeId &tid,Bucket::sendNode send,int m)
 {
@@ -141,7 +150,7 @@ void Search::searchStep(NodeId &tid,Bucket::sendNode send,int m)
 }
 void Search::searchStep(const Searches::iterator &sr,Bucket::sendNode send,int m)
 {
-
+    //QLOG_WARN()<<"6 test done:"<< sr->done;//TEST
     if(sr->done)
         return;
     bool isDone=true;
@@ -177,14 +186,16 @@ void Search::searchStep(const Searches::iterator &sr,Bucket::sendNode send,int m
             if(j++>=m)//给前3个发
                 break;
             send(n.node,sr->tid);
-            QLOG_ERROR()<<"send 3 node to search";
+            QLOG_ERROR()<<"send 3 node to search:"<<j;
             n.node->getId().printNodeId(1);
             n.requestTime = clock::now();
             n.requiredTimes += 1;
+
         }
     }
     sr->step_time = clock::now();
-    sr->done = false;
+  //  sr->done = false;
+//    QLOG_WARN()<<"7 set done false 2";
     return;
 }
 }
