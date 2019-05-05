@@ -762,11 +762,6 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
             NodeId tid(sr.tid());
             int node_count = sr.nodes().ebcnodes_size();
             auto tidsr = srch->findSearchList(tid);
-//            if(kad->findNode(tid))//TEST
-//            {
-//                tidsr->done = true;
-//                break;
-//            }
             if(tidsr == srch->searches.end())//正常来说不会出现
             {
                 QLOG_ERROR() << "the searchlist is not exist";
@@ -862,13 +857,6 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                 if(nodeId == tid)
                 {
                     tidsr->done = true;
-                  //  foundCallback(tid,*tidsr->searchNodes.begin()->node);
-                    QLOG_WARN()<<"2 set done true:"<<tidsr->done;
-                    QLOG_WARN()<<"tidsr"<<&*tidsr;
-                   // auto test = srch->findSearchList(tid);
-                    QLOG_WARN() << "3 rep get the tid ,set done = " /*<< test->done*/<<tidsr->done;
-                    //QLOG_WARN()<<"test"<<&*test;
-//                    test->tid.printNodeId();
                     foundCallback(tid, *lNode);
                     break;
                 }

@@ -9,8 +9,7 @@ namespace NET
 Search::Searches::iterator Search::findSearchList(const NodeId &tid)
 {
     decltype (searches.begin()) it ,itd = searches.end();
-    //QLOG_WARN()<<"searchlist size:"<<searches.size();
-    for(it = searches.begin() ;it != searches.end();it ++)
+    for(it = searches.begin();it != searches.end();it ++)
     {
         if(it->tid == tid )
         {
@@ -18,7 +17,6 @@ Search::Searches::iterator Search::findSearchList(const NodeId &tid)
         }
         if((it->done ||it->findover)&& (itd == searches.end()))
         {
-            QLOG_WARN()<<"test findsearchlist 2";
             itd = it;
         }
     }
@@ -148,7 +146,7 @@ void Search::searchStep(NodeId &tid,std::function<void (NodeId, Node &snode)> ca
 }
 void Search::searchStep(const Searches::iterator &sr,std::function<void (NodeId, Node &snode)> callback,Bucket::sendNode send,int m)
 {
-    QLOG_WARN()<<"6 test done and findover"<< sr->done<<sr->findover;//TEST
+
     if(sr->done||sr->findover)
         return;
     bool isDone=true;

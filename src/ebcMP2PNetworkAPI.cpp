@@ -72,20 +72,12 @@ void ebcMP2PNetworkAPI::getNetworkTable(NETWORK_DOMAIN_TABLE *networkTable)
   返回参数：true-节点加入成功，false-节点加入失败
   备    注：可以指定一个节点加入到网络中来
 */
-//bool ebcMP2PNetworkAPI::joinNodeToNetwork(const char *joinNetworkNodeAddress)
-//{
 
-//    std::string tmp_Id(joinNetworkNodeAddress,ID_LENGTH+3);
-//    return engine.joinNetwork(tmp_Id);
-
-
-//}
 bool ebcMP2PNetworkAPI::joinNodeToNetwork(const char *joinNetworkNodeAddress)
 {
 
     std::string tmp_Id(joinNetworkNodeAddress,ID_LENGTH+3);
     return engine.joinNetwork(tmp_Id);
-
 
 }
 
