@@ -132,8 +132,16 @@ bool Bucket::onNewNode(const Sp<Node>& node, int confirm, bool isServer)
 
     for (auto& n : b->nodes)
     {
-        if( (n->getId() == node->getId())&&(!node->isExpired()))
+//        if( (n->getId() == node->getId())&&(!node->isExpired()))
+        if( (n->getId() == node->getId())&&(!n->isExpired()))
             return false;
+        /* Try to get rid of an expired node. */
+        if (n->isExpired())
+            {
+                n = node;
+                return true;
+            }
+
     }
 
     bool mybucket = isServer?false:contains(b, selfId);
@@ -142,14 +150,14 @@ bool Bucket::onNewNode(const Sp<Node>& node, int confirm, bool isServer)
     if (b->nodes.size() >= MAX_NODE)
     {
         /* Try to get rid of an expired node. */
-        for (auto& n : b->nodes)
-        {
-            if (n->isExpired())
-            {
-                n = node;
-                return true;
-            }
-        }
+//        for (auto& n : b->nodes)
+//        {
+//            if (n->isExpired())
+//            {
+//                n = node;
+//                return true;
+//            }
+//        }
 
         int dNum = isServer?11:6;
         if (mybucket || depth(b) < dNum) {
@@ -176,7 +184,7 @@ bool Bucket::findNode(const NodeId &id)
     auto it = findBucket(id);
     for (auto & n : it->nodes)
     {
-        if(id == n->getId())
+        if((id == n->getId())&&(!n->isExpired()))
             return true;
     }
     return false;
@@ -187,7 +195,7 @@ Sp<Node> Bucket::getNode(const NodeId &id)
     auto it = findBucket(id);
     for (auto & n : it->nodes)
     {
-        if(id == n->getId())
+        if((id == n->getId())&&(!n->isExpired()))
             return n;
     }
     return nullptr;
@@ -255,7 +263,7 @@ bool Bucket::bucketMaintenance(sendNode sendFindNode, bool neighbour)
                         else
                         sendFindNode(node, selfId);
                         return true;
-            }
+                }
                         return false;
             }
                         );
@@ -293,85 +301,7 @@ bool Bucket::bucketMaintenance(sendNode sendFindNode, bool neighbour)
     return false;
 }
 
-///*****     服务器还给客户的ID表的改进方法（使得返回的ID更分散）     *****/
-///*****这是一个很难看懂的函数，写的也是很完美，恩，不需要注释了，注释了也看不懂*****/
-//std::list<Sp<Node>> Bucket::repNodes(const NodeId &id)
-//{
-//    std::list<Sp<Node>> returnNodes;
-//    auto it = findBucket(id);
-//    static int bit = depth(it) - 1;
-//    NodeId id_first = it->first;
-//    auto insertNodes = [&](int k,NodeId id)
-//    {
-//        auto it = findBucket(id);
-//        if(it->first != id)
-//        {
-//            return 0;
-//        }
-//        int insertNumber = 0;
-//        for(auto &n : it->nodes)
-//        {
-//            if(!n->isExpired())
-//            {
-//                returnNodes.push_back(n);
-//                insertNumber ++;
-//                if(--k <= 0)
-//                    break;
-//            }
-//        }
-//        return insertNumber;
-//    };
-//    int k = 8;
-//    bool kIs1 = false;
-//    insertNodes(k,it->first);
-//    for (;  bit >= 0 ; bit--)
-//    {
-//        int num = 0;
-//        auto insertOther = [&,insertNodes](int i)
-//        {
-//            id_first[(bit + i) / 8] ^= (0x80 >> ((bit + i) % 8));
-//            auto thisNum = insertNodes(k, id_first);
-//            num += thisNum;
-//            return thisNum;
-//        };
-//        auto insertOtherOne = [&,insertOther](int i)
-//        {
-//            auto tmp = insertOther(i);
-//            if(kIs1 && !tmp)
-//            {
-//                insertOther(4);
-//                id_first[(bit + 4) / 8] ^= (0x80 >> ((bit + 4) % 8));
-//            }
-//        };
-//        insertOther(0);
 
-//        if(k < 8)
-//        {
-//            insertOther(1);
-
-//            if(k < 4)
-//            {
-//                insertOther(2);
-//                insertOther(1);
-//                if(k < 2)
-//                {
-//                    insertOtherOne(3);
-//                    insertOtherOne(2);
-//                    insertOtherOne(1);
-//                    insertOtherOne(2);
-//                    kIs1 = true;
-//                }
-
-//            }
-//        }
-//        id_first[bit / 8] &= (0xfe << (7 - bit % 8));
-//        id_first[bit / 8 + 1] = 0x00;
-//        if(k > 1)
-//            k /= 2;
-//    }
-//    QLOG_WARN()<<"srv repnodes number:"<<returnNodes.size();
-//    return returnNodes;
-//}
 //xxn测试
 std::list<Sp<Node>> Bucket::repNodes(const NodeId &id)
 {
@@ -443,7 +373,6 @@ std::list<Sp<Node>> Bucket::repNodes(const NodeId &id)
                     insertOtherOne(2);
                     kIs1 = true;
                 }
-
             }
         }
         id_first[bit / 8] &= (0xfe << (7 - bit % 8));

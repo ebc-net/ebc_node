@@ -1,7 +1,6 @@
 #include "search.h"
 #include "bucket.h"
 #include <algorithm>
-#include "QsLog.h"
 #include<random>
 #include<ctime>
 
@@ -10,14 +9,16 @@ namespace NET
 Search::Searches::iterator Search::findSearchList(const NodeId &tid)
 {
     decltype (searches.begin()) it ,itd = searches.end();
-    for(it = searches.begin();it != searches.end();it ++)
+    //QLOG_WARN()<<"searchlist size:"<<searches.size();
+    for(it = searches.begin() ;it != searches.end();it ++)
     {
         if(it->tid == tid )
         {
             return it;
         }
-        if(it->done && (itd == searches.end()))
+        if((it->done ||it->findover)&& (itd == searches.end()))
         {
+            QLOG_WARN()<<"test findsearchlist 2";
             itd = it;
         }
     }
@@ -47,9 +48,9 @@ bool Search::addSearchNode(Sp<Node> &node, NodeId tid)
     {
         if(n.node == node)
         {
-            QLOG_INFO()<<"add the same node";
-            QLOG_WARN()<<"check the replied"<<n.replied;
-            node->getId().printNodeId();
+            //QLOG_INFO()<<"add the same node";
+            //QLOG_WARN()<<"check the replied"<<n.replied;
+            //node->getId().printNodeId();
             return true;
         }
     }
@@ -83,22 +84,23 @@ int Search::dhtSearch(NodeId tid, std::function<void (NodeId, Node &snode)> call
         if(!n->isExpired())
         {
             callback(tid,*(n.get()));
-            return 1;//成功返回0
+            return 1;//成功返回1
         }
     }
 
     auto it = findSearchList(tid);//本地没找到,就去searchlist找
     if(it != searches.end())
     {
-        if(!it->done)  //searching in progress
+        if(!it->done&&!it->findover)  //searching in progress
         {
-            searchStep(it, send);
+            searchStep(it,callback, send);
             it->step_time = clock::now();
 
             return 0;//think about
         }
         // new search reset.
         it->done = 0;
+        it->findover = 0;
         it->step_time = clock::now();
         it->tid =tid;
 
@@ -129,20 +131,25 @@ int Search::dhtSearch(NodeId tid, std::function<void (NodeId, Node &snode)> call
         n->getId().printNodeId(1);
         if(!addSearchNode(n,tid))
             return -1;
-
     }
-    searchStep(tid,send,3);//m=3
-    return 1;
+    searchStep(tid,callback,send,3);//m=3
+    if(it->done)
+        return 1;
+    if(it->findover)
+        return -2;
+    else
+        return 0;
+
 }
-void Search::searchStep(NodeId &tid,Bucket::sendNode send,int m)
+void Search::searchStep(NodeId &tid,std::function<void (NodeId, Node &snode)> callback,Bucket::sendNode send,int m)
 {
     auto it = findSearchList(tid);
-    searchStep(it,send,m);
+    searchStep(it,callback,send,m);
 }
-void Search::searchStep(const Searches::iterator &sr,Bucket::sendNode send,int m)
+void Search::searchStep(const Searches::iterator &sr,std::function<void (NodeId, Node &snode)> callback,Bucket::sendNode send,int m)
 {
-
-    if(sr->done)
+    QLOG_WARN()<<"6 test done and findover"<< sr->done<<sr->findover;//TEST
+    if(sr->done||sr->findover)
         return;
     bool isDone=true;
     int j = 0;
@@ -161,9 +168,17 @@ void Search::searchStep(const Searches::iterator &sr,Bucket::sendNode send,int m
     }
     if(isDone)
     {
+
         sr->step_time = clock::now();
-        sr->done = true;
-        QLOG_INFO()<<"search is done ,but not found!";
+        sr->findover = true;
+        callback(sr->tid,*sr->searchNodes.begin()->node);
+        //TEST
+        QLOG_WARN()<<"print the searchnode list";
+        for(auto &na : sr->searchNodes)
+        {
+            na.node->getId().printNodeId(1);
+        }
+        //QLOG_INFO()<<"search is done ,but not found!";
         return;
     }
     //未达到发送时间（间隔10S）
@@ -177,14 +192,14 @@ void Search::searchStep(const Searches::iterator &sr,Bucket::sendNode send,int m
             if(j++>=m)//给前3个发
                 break;
             send(n.node,sr->tid);
-            QLOG_ERROR()<<"send 3 node to search";
+            QLOG_ERROR()<<"send 3 node to search:"<<j;
             n.node->getId().printNodeId(1);
             n.requestTime = clock::now();
             n.requiredTimes += 1;
+
         }
     }
     sr->step_time = clock::now();
-    sr->done = false;
     return;
 }
 }

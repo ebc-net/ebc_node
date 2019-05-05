@@ -10,6 +10,7 @@
 #include "nodeid.h"
 #include "node.h"
 #include "utils.h"
+#include "QsLog.h"
 
 
 namespace NET
@@ -29,7 +30,8 @@ struct search
     time_point step_time;           /* the time of the last search_step */
     std::list<searchNode> searchNodes{};
     bool done;
-    search(NodeId _tid):tid(_tid),done(false){}
+    bool findover;//true 查找结束 未找到
+    search(NodeId _tid):tid(_tid),done(false),findover(false){QLOG_WARN()<<"search init set done false";}
 };
 class Search
 {
@@ -38,8 +40,8 @@ public:
     using Searches = std::list<search>;//searchlist
     Searches::iterator findSearchList(const NodeId& tid);
     bool addSearchNode(Sp<Node> &node, NodeId tid);
-    void searchStep(const Searches::iterator &sr,Bucket::sendNode _send,int m =3 );//when startsearch m=3,when client call m=1;
-    void searchStep(NodeId &tid,Bucket::sendNode _send,int m =3 );//when startsearch m=3,when client call m=1;
+    void searchStep(const Searches::iterator &sr,std::function<void( NodeId tid,Node &sNode)> callback,Bucket::sendNode _send,int m =3 );//when startsearch m=3,when client call m=1;
+    void searchStep(NodeId &tid,std::function<void (NodeId, Node &snode)> callback,Bucket::sendNode _send,int m =3 );//when startsearch m=3,when client call m=1;
     int dhtSearch(NodeId tid,std::function<void( NodeId tid,Node &sNode)> callback,Bucket::sendNode _send, bool isValue=false);
     Searches searches;
 private:

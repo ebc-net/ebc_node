@@ -27,7 +27,7 @@ Window
         }
     }
     visible: true
-    width: 640
+    width: 700
     height: 480
     title: qsTr("ebc")
     color: "#C0C0C0"
@@ -101,7 +101,7 @@ Window
     {
         id: start_btn
         anchors.bottom: parent.bottom;
-        anchors.left:  parent.horizontalCenter;
+        anchors.horizontalCenter: parent.horizontalCenter;
         text: "start"
         onClicked:
         {
@@ -114,7 +114,7 @@ Window
     {
         id: search_btn
         anchors.bottom: parent.bottom
-        anchors.right: egg2.left
+        anchors.right: start_btn.left
         text: "search"
         onClicked:
         {
@@ -160,6 +160,18 @@ Window
     }
     Button
     {
+        id: deletenode
+        anchors.bottom: parent.bottom
+        anchors.left: selfid.right
+        text: "delete"
+        onClicked:
+        {
+            console.log("delete   "+node_id.text)
+            log.deleteNode(node_id.text)
+        }
+    }
+    Button
+    {
         id: clean_search_btn
         anchors.bottom: parent.bottom
         anchors.right: send_btn.left
@@ -170,31 +182,31 @@ Window
             data_stream.text = ""
         }
     }
-    Button
-    {
-        id: egg
-        width: 6
-        height:6
-        anchors.bottom: parent.bottom
-        anchors.right: parent.right
-         text: ""
-         onClicked:
-         {
-             node_id.text = "*****  彩蛋彩蛋 (:D)   还有一个彩蛋哦   *******"
-         }
-    }
-    Button
-    {
-        id: egg2
-        width: 2
-        anchors.bottom: parent.bottom
-        anchors.right: start_btn.left
-         text: ""
-         onClicked:
-         {
-             node_id.text = "************    彩蛋中的彩蛋 (:D) 真棒   *****************"
-             data_stream.text = "************    彩蛋中的彩蛋 (:D) 真棒   *****************"
-         }
-    }
+//    Button
+//    {
+//        id: egg
+//        width: 6
+//        height:6
+//        anchors.bottom: parent.bottom
+//        anchors.right: parent.right
+//         text: ""
+//         onClicked:
+//         {
+//             node_id.text = "*****  彩蛋彩蛋 (:D)   还有一个彩蛋哦   *******"
+//         }
+//    }
+//    Button
+//    {
+//        id: egg2
+//        width: 2
+//        anchors.bottom: parent.bottom
+//        anchors.right: start_btn.left
+//         text: ""
+//         onClicked:
+//         {
+//             node_id.text = "************    彩蛋中的彩蛋 (:D) 真棒   *****************"
+//             data_stream.text = "************    彩蛋中的彩蛋 (:D) 真棒   *****************"
+//         }
+//    }
 }
 

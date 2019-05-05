@@ -50,18 +50,17 @@ message EbcMsg
 	uint32    head = 1;       //EBC消息的头部，必须字段，必须校验  0xF5FA
 	string    version = 2;	  //版本号，必须字段，区分不同版本，必须校验
 	bytes    src_id = 3;	  //发起节点的ID，对节点来说必须字段，对服务器来说，怎么处理？  -----}
-	
-	uint32    ttl = 5;	      //ttl值，没经过一个节点ttl减1，减到0丢弃消息	                -----} 作用不大
-	uint32    id = 6;         //本条消息的ID，节点要对回应的消息做此ID校验，查看是否是上条消息的回应
+	uint32    ttl = 4;	      //ttl值，没经过一个节点ttl减1，减到0丢弃消息	                -----} 作用不大
+	uint32    id = 5;         //本条消息的ID，节点要对回应的消息做此ID校验，查看是否是上条消息的回应
 							  //同时，对于后续节点转发可作为冗余处理的手段
-	MsgType       type = 7;       //消息类型，必须字段
-	MsgSubType    sub_type = 8;   //消息子类型，可选字段，多种ACK
-	uint32    length = 9;     //消息正文长度，可表示节点个数，可选字段
+	MsgType       type = 6;       //消息类型，必须字段
+	MsgSubType    sub_type = 7;   //消息子类型，可选字段，多种ACK
+	uint32    length = 8;     //消息正文长度，可表示节点个数，可选字段
 	oneof body
 	{	
-		search   msg = 10;        //消息正文，可选字段
-		EbcNodes nodes= 11;    //节点信息，如果消息子类型是NODE的话
-		bytes ebcdata = 12; //ebc数据流
+		search   msg = 0;        //消息正文，可选字段
+		EbcNodes nodes= 10;    //节点信息，如果消息子类型是NODE的话
+		bytes ebcdata = 11; //ebc数据流
 	}
 }
  
