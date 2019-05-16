@@ -12,7 +12,7 @@ namespace  NET
 
 //#define SUPER_NODE ("192.168.2.40")
 #define SUPER_NODE ("111.230.194.219")
-#define NODE_PORT  (9443)
+//#define NODE_PORT  (9443)
 #define SRV_PORT   (8888)
 #define ID_LENGTH  (24)
 #define MAX_NODE   (3)
@@ -28,6 +28,7 @@ using Sp = std::shared_ptr<T>;
 using clock = std::chrono::steady_clock;
 using time_point = clock::time_point;
 using seconds = std::chrono::seconds;
+//using NodeId = std::array<uint8_t, ID_LENGTH>;
 
 }
 

@@ -126,6 +126,7 @@ bool Bucket::contains(const Kbucket::const_iterator &it, const NodeId &id) const
 
 bool Bucket::onNewNode(const Sp<Node>& node, int confirm, bool isServer)
 {
+
     auto b = findBucket(node->getId());
     if (b == buckets.end())
         return false;
@@ -159,7 +160,7 @@ bool Bucket::onNewNode(const Sp<Node>& node, int confirm, bool isServer)
 //            }
 //        }
 
-        int dNum = isServer?11:6;
+        int dNum = isServer?11:0;
         if (mybucket || depth(b) < dNum) {
             split(b);
             return onNewNode(node, confirm,isServer);
@@ -382,6 +383,84 @@ std::list<Sp<Node>> Bucket::repNodes(const NodeId &id)
     }
     return returnNodes;
 }
+
+std::list<Sp<Node>> Bucket::broadcastOthers(const NodeId &sourceId)
+{
+    int insertNum = 0;
+    int dep = -1;
+    std::list<Sp<Node>> returnNodes{};
+    if(bucketIsEmpty(selfId))
+    {
+        QLOG_ERROR()<<"bucket is empty, broadcast to nobody!";
+        return returnNodes;
+    }
+    auto it = findBucket(selfId);
+    for(unsigned i = 0; i < ID_LENGTH; ++i)
+    {
+        if(sourceId[i] == selfId[i])
+            continue;
+        auto _xor = sourceId[i] ^ selfId[i];
+        for(int j = 0; j < 8; ++j)
+        {
+            if(_xor & (0x80 >> j))
+            {
+                dep = j + 8 * i;
+                break;
+            }
+        }
+    }
+    auto itt = buckets.begin();
+    for(auto n = itt; itt != buckets.end(); itt++)
+    {
+        if(n->nodes.empty())
+        {
+            QLOG_ERROR()<<"bucket   "<<n->first.toString().c_str()<<"  is empty!";
+            continue;
+        }
+        if(it->first != n->first && ((depth(n)-1) > dep))
+        {
+            for(auto &n : n->nodes)
+            {
+                if(!n->isExpired())
+                {
+                    returnNodes.push_back(n);
+                    insertNum++;
+                    break;
+                }
+            }
+        }
+    }
+    return returnNodes;
+}
+
+
+std::list<Sp<Node>> Bucket::broadcastLocal()
+{
+    int insertNum = 0;
+    std::list<Sp<Node>> returnNodes{};
+    if(bucketIsEmpty(selfId))
+    {
+        QLOG_ERROR()<<"bucket is empty";
+        return returnNodes;
+    }
+    auto it = findBucket(selfId);
+
+    if(it->nodes.empty())
+        QLOG_ERROR()<<"bucket   "<<it->first.toString().c_str()<<"  is empty!";
+    else
+        ;
+    for(auto &n : it->nodes)
+    {
+        if(!n->isExpired())
+        {
+            returnNodes.push_back(n);
+            insertNum++;
+        }
+    }
+    return returnNodes;
+}
+
+
 bool Bucket::split(const Kbucket::iterator &b)
 {
     NodeId new_first_id;
@@ -422,7 +501,7 @@ void Bucket::closeBucket(Bucket::destoryNet d)
     }
 }
 
-void Bucket::expireBucket()
+void Bucket::delExpNode()
 {
     for(auto b = buckets.begin(); b != buckets.end(); b++)
     {
@@ -436,6 +515,61 @@ void Bucket::expireBucket()
     QLOG_INFO()<<"expired check finished!";
 }
 
+void Bucket::delEmpBuk()
+{
+    for(auto b = buckets.begin(); b != buckets.end();)
+    {
+        if(b->nodes.size() == 0)
+        {
+            if(b == buckets.begin())
+            {
+                b++;
+                continue;
+            }
+            int bit1 = std::prev(b)->first.lowBit();
+            int bit2 = b->first.lowBit();
+            int bit3 = std::next(b) != buckets.end() ? std::next(b)->first.lowBit() : -1;
+            if(bit1 < bit2 && bit2 > bit3)
+            {
+                auto itt = b++;
+                buckets.erase(itt);
+            }
+            else if(bit2 < bit3)
+            {
+                if(bit3 != -1)
+                {
+                    auto bit4 = std::next(std::next(b)) != buckets.end() ? std::next(std::next(b))->first.lowBit() : -1;
+                    if(bit3 < bit4)
+                    {
+                        b++;
+                        continue;
+                    }
+                    else if(bit3 == bit4)
+                    {
+                        QLOG_ERROR()<<"delete empty bucket first lowbit error2";
+                        return;
+                    }
+                }
+                std::next(b)->nodes.splice(b->nodes.begin(), b->nodes);
+                b++;
+                auto itt = b++;
+                buckets.erase(itt);
+            }
+            else if (bit2 == bit3)
+            {
+                QLOG_ERROR()<<"delete empty bucket first lowbit error";
+                return;
+            }
+            else
+                b++;
+        }
+        else
+            b++;
+    }
+    QLOG_WARN()<<"out of for! delempbuk!";
+
+}
+
 bool Bucket::isEmpty() const
 {
     return buckets.empty();
@@ -444,6 +578,11 @@ bool Bucket::isEmpty() const
 bool Bucket::bucketIsEmpty(NodeId id)
 {
     return (buckets.size()==1) && (findBucket(id)->nodes.size()==0) ;
+}
+
+NodeId Bucket::getSelfId()
+{
+    return selfId;
 }
 
 void Bucket::dump(int type) const

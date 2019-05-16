@@ -9,6 +9,7 @@ class NodeId : public std::array<uint8_t, ID_LENGTH>
 public:
     NodeId(const std::string&);
     NodeId(){this->fill(0);}
+    NodeId(uint8_t num){this->fill(num);}
     std::string toString()const;
     int lowBit()const;
     int xorCmp( const NodeId& _id1, const NodeId& _id2)const;

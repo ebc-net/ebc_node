@@ -137,7 +137,6 @@ int Search::dhtSearch(NodeId tid, std::function<void (NodeId, Node &snode)> call
         return -2;
     else
         return 0;
-
 }
 void Search::searchStep(NodeId &tid,std::function<void (NodeId, Node &snode)> callback,Bucket::sendNode send,int m)
 {

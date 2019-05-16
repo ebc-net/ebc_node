@@ -32,7 +32,7 @@ class ebcMP2PNetworkAPI
 {
 
 private:
-NET::NetEngine engine;
+NET::NetEngine *engine;
 int initCount = 0;
 public:
     ebcMP2PNetworkAPI();
@@ -62,6 +62,9 @@ void closeNetwork();
   uint32_t getReceiveDataStream(char *receiveDataStreamBuffer, uint32_t receiveDataStreamBufferSize);
   // （9）读取接收数据包消息函数
   uint16_t getReceiveDataPackageMessage();
+
+  // （10）广播消息给全网
+  void broadcastMessage(const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize);
 };
 
 /*** end of file **************************************************************/

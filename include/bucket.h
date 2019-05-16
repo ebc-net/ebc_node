@@ -39,6 +39,8 @@ public:
     NodeId randomId(const Kbucket::const_iterator &bucket);
     unsigned depth(const Kbucket::const_iterator& bucket) const;
     std::list<Sp<Node>> repNodes(const NodeId &id);
+    std::list<Sp<Node>> broadcastOthers(const NodeId &);
+    std::list<Sp<Node>> broadcastLocal();
     inline bool contains(const Kbucket::const_iterator &it, const NodeId& id) const;
     bool onNewNode(const Sp<Node>& node, int confirm, bool isServer=false) ;
     bool findNode(const NodeId &id);
@@ -46,9 +48,11 @@ public:
     bool bucketMaintenance(sendNode,bool neighbour = true);//用neighbour = true 扩桶，neighbour = false 桶维护
     bool split(const Kbucket::iterator &b);
     void closeBucket(destoryNet d);
-    void expireBucket();
+    void delExpNode();
+    void delEmpBuk();
     void dump(int type = 0) const;
     bool bucketIsEmpty(NodeId id); //have no nodes;
+    NodeId getSelfId();
     Kbucket buckets;
 
 private:    

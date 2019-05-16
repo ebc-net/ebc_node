@@ -29,7 +29,7 @@ Window
     visible: true
     width: 700
     height: 480
-    title: qsTr("ebc")
+    title: qsTr("ebc communication")
     color: "#C0C0C0"
     Rectangle
     {
