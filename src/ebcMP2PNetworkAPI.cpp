@@ -19,11 +19,12 @@
 // MP2P网络与通讯模块接口函数类
 ebcMP2PNetworkAPI::ebcMP2PNetworkAPI()
 {
+    engine = new NET::NetEngine;
 }
 
 ebcMP2PNetworkAPI::~ebcMP2PNetworkAPI()
 {
-//    engine.~NetEngine();
+    delete engine;
 }
 
 /*
@@ -37,8 +38,8 @@ bool ebcMP2PNetworkAPI::createNetwork(const char *createNetworkNodeAddress)
     if(initCount++)
         return 0;
     std::string tmp_Id(createNetworkNodeAddress,ID_LENGTH+3);
-    engine.NetInit(tmp_Id);
-    engine.startClient();
+    engine->NetInit(tmp_Id);
+    engine->startClient();
     return 1;
 }
 
@@ -61,7 +62,8 @@ bool ebcMP2PNetworkAPI::updateNetwork()
 */
 void ebcMP2PNetworkAPI::getNetworkTable(NETWORK_DOMAIN_TABLE *networkTable)
 {
-    engine.getBucket(networkTable->onlineNodeAddress);
+    engine->getBucket(networkTable->onlineNodeAddress);
+    networkTable->onlineNodeNumber = networkTable->onlineNodeAddress.size();
 }
 
 /*
@@ -77,7 +79,7 @@ bool ebcMP2PNetworkAPI::joinNodeToNetwork(const char *joinNetworkNodeAddress)
 {
 
     std::string tmp_Id(joinNetworkNodeAddress,ID_LENGTH+3);
-    return engine.joinNetwork(tmp_Id);
+    return engine->joinNetwork(tmp_Id);
 
 }
 
@@ -92,7 +94,7 @@ bool ebcMP2PNetworkAPI::joinNodeToNetwork(const char *joinNetworkNodeAddress)
 bool ebcMP2PNetworkAPI::breakNodeFromNetwork(const char *breakNetworkNodeAddress)
 {
     std::string tmp_Id(breakNetworkNodeAddress,ID_LENGTH+3);
-    return engine.eraseNode(tmp_Id);
+    return engine->eraseNode(tmp_Id);
 
 }
 
@@ -107,24 +109,10 @@ bool ebcMP2PNetworkAPI::breakNodeFromNetwork(const char *breakNetworkNodeAddress
 */
 bool ebcMP2PNetworkAPI::sendDataStream(const char *sourceNodeAddress, const char *targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize)
 {   
-    printf("%02x",engine.kad.get());
-    printf("send data : \n");
-//    for (int i = 0;i<sendDataStreamBufferSize;i++)
-//    {
-//        printf("%02x ",sendDataStreamBuffer[i]);
-//    }
-    printf("sourceNodeAddress:\n");
-    for(int i = 0 ; i < 27; i++)
-        printf("%02x",sourceNodeAddress[i]);
-    printf("\n");
-    printf("targetNodeAddress:\n");
-    for(int i = 0 ; i < 27; i++)
-        printf("%02x",targetNodeAddress[i]);
-    printf("\n");
-
+    std::cout<<"ebcnet::data size:"<<sendDataStreamBufferSize;
     std::string tmp_Id(targetNodeAddress,ID_LENGTH+3);
-    engine.sendDataStream(tmp_Id, sendDataStreamBuffer, sendDataStreamBufferSize);
-    return 0;
+    return engine->sendDataStream(tmp_Id, sendDataStreamBuffer, sendDataStreamBufferSize);
+
 }
 
 /*
@@ -137,7 +125,7 @@ uint32_t ebcMP2PNetworkAPI::getReceiveDataStream(char *receiveDataStreamBuffer, 
 {	
 //    printf("start receive\n");
     std::string data;
-    if(!engine.getUserDate(data))
+    if(!engine->getUserDate(data))
         return 0;
     uint32_t len = (data.size() > receiveDataStreamBufferSize)?receiveDataStreamBufferSize:data.size();
     memcpy(receiveDataStreamBuffer, data.data(), len);
@@ -146,7 +134,16 @@ uint32_t ebcMP2PNetworkAPI::getReceiveDataStream(char *receiveDataStreamBuffer, 
 
 uint16_t ebcMP2PNetworkAPI::getReceiveDataPackageMessage()
 {
-    return engine.getUserDataListSize();
+    return engine->getUserDataListSize();
 }
+
+
+void ebcMP2PNetworkAPI::broadcastMessage(const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize)
+{
+    auto id = engine->self.getId();
+    engine->brocastMsg(id,sendDataStreamBuffer,sendDataStreamBufferSize);
+    return;
+}
+
 
 /*** end of file **************************************************************/

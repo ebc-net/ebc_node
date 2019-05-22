@@ -25,7 +25,8 @@ public:
 
     typedef enum _NatType
     {
-        FULL_CLONE = 0, //全克隆
+        EMPTY = 0,
+        FULL_CLONE, //全克隆
         RESTRICT , //限制型
         PORT_RESTRICT , //端口限制
         SYMMTRIC,   //对称型

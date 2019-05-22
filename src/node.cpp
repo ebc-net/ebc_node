@@ -99,6 +99,9 @@ void Node::printNodeState(const Node::NodeState _state)
 void Node::printNatType(const Node::NatType _nat)
 {
     switch (_nat) {
+    case EMPTY:
+        QLOG_INFO()<<"EMPTY";
+        break;
     case FULL_CLONE:
         QLOG_INFO()<<"FULL CLONE";
         break;

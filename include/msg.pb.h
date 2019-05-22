@@ -73,19 +73,21 @@ namespace config {
 
 enum MsgType {
   EMPTY = 0,
-  GET_NODE = 1,
-  GET_DATA = 2,
-  PING = 3,
-  HEART = 4,
-  REP = 5,
-  PUNCH = 6,
-  SENDDATASTREAM = 7,
+  TURN = 1,
+  GET_NODE = 2,
+  GET_DATA = 3,
+  PING = 4,
+  HEART = 5,
+  REP = 6,
+  PUNCH = 7,
+  SENDDATASTREAM = 8,
+  SENDBROADDATA = 9,
   MsgType_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::google::protobuf::int32>::min(),
   MsgType_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::google::protobuf::int32>::max()
 };
 bool MsgType_IsValid(int value);
 const MsgType MsgType_MIN = EMPTY;
-const MsgType MsgType_MAX = SENDDATASTREAM;
+const MsgType MsgType_MAX = SENDBROADDATA;
 const int MsgType_ARRAYSIZE = MsgType_MAX + 1;
 
 enum MsgSubType {
@@ -93,7 +95,8 @@ enum MsgSubType {
   PONG = 1,
   NODE = 2,
   DATA = 3,
-  DATASTREAM = 4,
+  PORT = 4,
+  DATASTREAM = 5,
   MsgSubType_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::google::protobuf::int32>::min(),
   MsgSubType_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::google::protobuf::int32>::max()
 };
@@ -637,17 +640,31 @@ class EbcMsg final :
   ::std::string* release_src_id();
   void set_allocated_src_id(::std::string* src_id);
 
+  // bytes dst_id = 4;
+  void clear_dst_id();
+  static const int kDstIdFieldNumber = 4;
+  const ::std::string& dst_id() const;
+  void set_dst_id(const ::std::string& value);
+  #if LANG_CXX11
+  void set_dst_id(::std::string&& value);
+  #endif
+  void set_dst_id(const char* value);
+  void set_dst_id(const void* value, size_t size);
+  ::std::string* mutable_dst_id();
+  ::std::string* release_dst_id();
+  void set_allocated_dst_id(::std::string* dst_id);
+
   // uint32 head = 1;
   void clear_head();
   static const int kHeadFieldNumber = 1;
   ::google::protobuf::uint32 head() const;
   void set_head(::google::protobuf::uint32 value);
 
-  // uint32 ttl = 5;
-  void clear_ttl();
-  static const int kTtlFieldNumber = 5;
-  ::google::protobuf::uint32 ttl() const;
-  void set_ttl(::google::protobuf::uint32 value);
+  // uint32 port = 5;
+  void clear_port();
+  static const int kPortFieldNumber = 5;
+  ::google::protobuf::uint32 port() const;
+  void set_port(::google::protobuf::uint32 value);
 
   // uint32 id = 6;
   void clear_id();
@@ -723,8 +740,9 @@ class EbcMsg final :
   ::google::protobuf::internal::InternalMetadataWithArenaLite _internal_metadata_;
   ::google::protobuf::internal::ArenaStringPtr version_;
   ::google::protobuf::internal::ArenaStringPtr src_id_;
+  ::google::protobuf::internal::ArenaStringPtr dst_id_;
   ::google::protobuf::uint32 head_;
-  ::google::protobuf::uint32 ttl_;
+  ::google::protobuf::uint32 port_;
   ::google::protobuf::uint32 id_;
   int type_;
   int sub_type_;
@@ -1218,18 +1236,71 @@ inline void EbcMsg::set_allocated_src_id(::std::string* src_id) {
   // @@protoc_insertion_point(field_set_allocated:config.EbcMsg.src_id)
 }
 
-// uint32 ttl = 5;
-inline void EbcMsg::clear_ttl() {
-  ttl_ = 0u;
+// bytes dst_id = 4;
+inline void EbcMsg::clear_dst_id() {
+  dst_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
-inline ::google::protobuf::uint32 EbcMsg::ttl() const {
-  // @@protoc_insertion_point(field_get:config.EbcMsg.ttl)
-  return ttl_;
+inline const ::std::string& EbcMsg::dst_id() const {
+  // @@protoc_insertion_point(field_get:config.EbcMsg.dst_id)
+  return dst_id_.GetNoArena();
 }
-inline void EbcMsg::set_ttl(::google::protobuf::uint32 value) {
+inline void EbcMsg::set_dst_id(const ::std::string& value) {
   
-  ttl_ = value;
-  // @@protoc_insertion_point(field_set:config.EbcMsg.ttl)
+  dst_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:config.EbcMsg.dst_id)
+}
+#if LANG_CXX11
+inline void EbcMsg::set_dst_id(::std::string&& value) {
+  
+  dst_id_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:config.EbcMsg.dst_id)
+}
+#endif
+inline void EbcMsg::set_dst_id(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  dst_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:config.EbcMsg.dst_id)
+}
+inline void EbcMsg::set_dst_id(const void* value, size_t size) {
+  
+  dst_id_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:config.EbcMsg.dst_id)
+}
+inline ::std::string* EbcMsg::mutable_dst_id() {
+  
+  // @@protoc_insertion_point(field_mutable:config.EbcMsg.dst_id)
+  return dst_id_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* EbcMsg::release_dst_id() {
+  // @@protoc_insertion_point(field_release:config.EbcMsg.dst_id)
+  
+  return dst_id_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void EbcMsg::set_allocated_dst_id(::std::string* dst_id) {
+  if (dst_id != nullptr) {
+    
+  } else {
+    
+  }
+  dst_id_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), dst_id);
+  // @@protoc_insertion_point(field_set_allocated:config.EbcMsg.dst_id)
+}
+
+// uint32 port = 5;
+inline void EbcMsg::clear_port() {
+  port_ = 0u;
+}
+inline ::google::protobuf::uint32 EbcMsg::port() const {
+  // @@protoc_insertion_point(field_get:config.EbcMsg.port)
+  return port_;
+}
+inline void EbcMsg::set_port(::google::protobuf::uint32 value) {
+  
+  port_ = value;
+  // @@protoc_insertion_point(field_set:config.EbcMsg.port)
 }
 
 // uint32 id = 6;

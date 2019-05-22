@@ -9,7 +9,7 @@
 #include <string.h>
 #include "netengine.h"
 #include "bucket.h"
-
+#include "ebcCryptoLib.h"
 #include "QsLog.h"
 
 #ifdef ON_QT
@@ -140,12 +140,14 @@ int main(int argc, char *argv[])
     Cout::instance();
     QLOG_INFO() << "Program started ";
 #endif
-    NET::NodeId id;
-    getRandom(id.data(), 24);
+//    NET::NodeId id;
+//    getRandom(id.data(), 24);
 //    id.at(0) = 'e';
 //    id.at(1) = 'b';
 //    id.at(2) = 'c';
-
+    ebcCryptoLib cl;
+    NET::NodeId id;
+    cl.randomNbytes(id.data(), ID_LENGTH);
     Sp<NET::Bucket> kad = std::make_shared <Bucket>(id);
     NET::NetEngine net(id, kad);
     //服务器或是客户机的K桶

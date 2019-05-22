@@ -108,6 +108,8 @@ bool MsgType_IsValid(int value) {
     case 5:
     case 6:
     case 7:
+    case 8:
+    case 9:
       return true;
     default:
       return false;
@@ -1199,7 +1201,8 @@ void EbcMsg::set_allocated_nodes(::config::EbcNodes* nodes) {
 const int EbcMsg::kHeadFieldNumber;
 const int EbcMsg::kVersionFieldNumber;
 const int EbcMsg::kSrcIdFieldNumber;
-const int EbcMsg::kTtlFieldNumber;
+const int EbcMsg::kDstIdFieldNumber;
+const int EbcMsg::kPortFieldNumber;
 const int EbcMsg::kIdFieldNumber;
 const int EbcMsg::kTypeFieldNumber;
 const int EbcMsg::kSubTypeFieldNumber;
@@ -1225,6 +1228,10 @@ EbcMsg::EbcMsg(const EbcMsg& from)
   src_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   if (from.src_id().size() > 0) {
     src_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.src_id_);
+  }
+  dst_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.dst_id().size() > 0) {
+    dst_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.dst_id_);
   }
   ::memcpy(&head_, &from.head_,
     static_cast<size_t>(reinterpret_cast<char*>(&length_) -
@@ -1255,6 +1262,7 @@ void EbcMsg::SharedCtor() {
       &scc_info_EbcMsg_msg_2eproto.base);
   version_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   src_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  dst_id_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&head_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&length_) -
       reinterpret_cast<char*>(&head_)) + sizeof(length_));
@@ -1269,6 +1277,7 @@ EbcMsg::~EbcMsg() {
 void EbcMsg::SharedDtor() {
   version_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   src_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  dst_id_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   if (has_body()) {
     clear_body();
   }
@@ -1314,6 +1323,7 @@ void EbcMsg::Clear() {
 
   version_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   src_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  dst_id_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&head_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&length_) -
       reinterpret_cast<char*>(&head_)) + sizeof(length_));
@@ -1372,10 +1382,25 @@ const char* EbcMsg::_InternalParse(const char* begin, const char* end, void* obj
         ptr += size;
         break;
       }
-      // uint32 ttl = 5;
+      // bytes dst_id = 4;
+      case 4: {
+        if (static_cast<::google::protobuf::uint8>(tag) != 34) goto handle_unusual;
+        ptr = ::google::protobuf::io::ReadSize(ptr, &size);
+        GOOGLE_PROTOBUF_PARSER_ASSERT(ptr);
+        object = msg->mutable_dst_id();
+        if (size > end - ptr + ::google::protobuf::internal::ParseContext::kSlopBytes) {
+          parser_till_end = ::google::protobuf::internal::GreedyStringParser;
+          goto string_till_end;
+        }
+        GOOGLE_PROTOBUF_PARSER_ASSERT(::google::protobuf::internal::StringCheck(ptr, size, ctx));
+        ::google::protobuf::internal::InlineGreedyStringParser(object, ptr, size, ctx);
+        ptr += size;
+        break;
+      }
+      // uint32 port = 5;
       case 5: {
         if (static_cast<::google::protobuf::uint8>(tag) != 40) goto handle_unusual;
-        msg->set_ttl(::google::protobuf::internal::ReadVarint(&ptr));
+        msg->set_port(::google::protobuf::internal::ReadVarint(&ptr));
         GOOGLE_PROTOBUF_PARSER_ASSERT(ptr);
         break;
       }
@@ -1529,13 +1554,24 @@ bool EbcMsg::MergePartialFromCodedStream(
         break;
       }
 
-      // uint32 ttl = 5;
+      // bytes dst_id = 4;
+      case 4: {
+        if (static_cast< ::google::protobuf::uint8>(tag) == (34 & 0xFF)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadBytes(
+                input, this->mutable_dst_id()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint32 port = 5;
       case 5: {
         if (static_cast< ::google::protobuf::uint8>(tag) == (40 & 0xFF)) {
 
           DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
                    ::google::protobuf::uint32, ::google::protobuf::internal::WireFormatLite::TYPE_UINT32>(
-                 input, &ttl_)));
+                 input, &port_)));
         } else {
           goto handle_unusual;
         }
@@ -1677,9 +1713,15 @@ void EbcMsg::SerializeWithCachedSizes(
       3, this->src_id(), output);
   }
 
-  // uint32 ttl = 5;
-  if (this->ttl() != 0) {
-    ::google::protobuf::internal::WireFormatLite::WriteUInt32(5, this->ttl(), output);
+  // bytes dst_id = 4;
+  if (this->dst_id().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteBytesMaybeAliased(
+      4, this->dst_id(), output);
+  }
+
+  // uint32 port = 5;
+  if (this->port() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt32(5, this->port(), output);
   }
 
   // uint32 id = 6;
@@ -1751,6 +1793,13 @@ size_t EbcMsg::ByteSizeLong() const {
         this->src_id());
   }
 
+  // bytes dst_id = 4;
+  if (this->dst_id().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::BytesSize(
+        this->dst_id());
+  }
+
   // uint32 head = 1;
   if (this->head() != 0) {
     total_size += 1 +
@@ -1758,11 +1807,11 @@ size_t EbcMsg::ByteSizeLong() const {
         this->head());
   }
 
-  // uint32 ttl = 5;
-  if (this->ttl() != 0) {
+  // uint32 port = 5;
+  if (this->port() != 0) {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::UInt32Size(
-        this->ttl());
+        this->port());
   }
 
   // uint32 id = 6;
@@ -1842,11 +1891,15 @@ void EbcMsg::MergeFrom(const EbcMsg& from) {
 
     src_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.src_id_);
   }
+  if (from.dst_id().size() > 0) {
+
+    dst_id_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.dst_id_);
+  }
   if (from.head() != 0) {
     set_head(from.head());
   }
-  if (from.ttl() != 0) {
-    set_ttl(from.ttl());
+  if (from.port() != 0) {
+    set_port(from.port());
   }
   if (from.id() != 0) {
     set_id(from.id());
@@ -1901,8 +1954,10 @@ void EbcMsg::InternalSwap(EbcMsg* other) {
     GetArenaNoVirtual());
   src_id_.Swap(&other->src_id_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
     GetArenaNoVirtual());
+  dst_id_.Swap(&other->dst_id_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
   swap(head_, other->head_);
-  swap(ttl_, other->ttl_);
+  swap(port_, other->port_);
   swap(id_, other->id_);
   swap(type_, other->type_);
   swap(sub_type_, other->sub_type_);

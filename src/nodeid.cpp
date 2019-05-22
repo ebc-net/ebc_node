@@ -35,7 +35,8 @@ int NodeId::lowBit() const
 
 int NodeId::xorCmp(const NodeId &_id1 , const NodeId &_id2)const
 {
-    for(unsigned i = 0; i < ID_LENGTH; i++) {
+    for(unsigned i = 0; i < ID_LENGTH; i++)
+    {
         uint8_t xor1, xor2;
         if(_id1[i] == _id2[i])
             continue;
@@ -53,7 +54,8 @@ unsigned int NodeId::commBit( const NodeId& _id)const
 {
     unsigned i, j;
     uint8_t x;
-    for(i = 0; i < ID_LENGTH; i++) {
+    for(i = 0; i < ID_LENGTH; i++)
+    {
         if(at(i) != _id.at(i))
             break;
     }
@@ -64,7 +66,8 @@ unsigned int NodeId::commBit( const NodeId& _id)const
     x = at(i) ^ _id.at(i);
 
     j = 0;
-    while((x & 0x80) == 0) {
+    while((x & 0x80) == 0)
+    {
         x <<= 1;
         j++;
     }
