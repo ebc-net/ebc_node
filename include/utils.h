@@ -13,7 +13,7 @@ namespace  NET
 //#define SUPER_NODE ("192.168.2.40")
 #define SUPER_NODE ("111.230.194.219")
 //#define NODE_PORT  (9443)
-#define SRV_PORT   (6666)
+#define SRV_PORT   (9444)
 #define ID_LENGTH  (24)
 #define MAX_NODE   (3)
 #define MAX_SEARCH_NODE  (14)
