@@ -73,7 +73,7 @@ void NetEngine::NetInit(const NodeId _id, Sp<Bucket> _kad, const bool _isServer)
         searchNode.set_isid(true);
         searchNode.set_tid(&tId, ID_LENGTH);
         msgPack sendMsg(self.getId());
-        int msg_len = sendMsg.pack(config::MsgType::GET_DATA, &searchNode, send_buf, sizeof(send_buf),config::MsgSubType::EMPTY_SUB,0,dstNode->getId());//只传ID去
+        int msg_len = sendMsg.pack(config::MsgType::GET_DATA,0, &searchNode, send_buf, sizeof(send_buf),config::MsgSubType::EMPTY_SUB, 0, dstNode->getId());//只传ID去
         if(msg_len < 0)
         {
             QLOG_ERROR() << "SendSearchNode msglen error";
@@ -90,7 +90,7 @@ void NetEngine::NetInit(const NodeId _id, Sp<Bucket> _kad, const bool _isServer)
         targetNode.set_id(targetId.toString());
         msgPack sendMsg(self.getId());
 
-        int msg_len = sendMsg.pack(config::MsgType::GET_NODE, &targetNode, fbuf, sizeof(fbuf),config::MsgSubType::EMPTY_SUB,0,dstNode->getId());//只传ID去
+        int msg_len = sendMsg.pack(config::MsgType::GET_NODE,0, &targetNode, fbuf, sizeof(fbuf),config::MsgSubType::EMPTY_SUB,0,dstNode->getId());//只传ID去
         if(msg_len < 0)
             return ;
         UDT::sendmsg(dstNode->getSock(), fbuf, msg_len);
@@ -150,7 +150,7 @@ void NetEngine::startServer()
         int sock_len = sizeof(struct sockaddr);
         struct sockaddr_in srv_addr, client;
         srv_addr.sin_addr.s_addr = INADDR_ANY;
-        srv_addr.sin_port = htons(SRV_PORT);
+        srv_addr.sin_port = htons(SRV_PORT);//此处需考虑一下
         srv_addr.sin_family = AF_INET;
 
         setUdtOpt(srv);
@@ -187,7 +187,7 @@ void NetEngine::startServer()
                     //the srv has no state = CONNECTING ,as it should not connect.
                     if(CLOSED == state || BROKEN == state )
                     {
-                        QLOG_INFO() << "client disconnected";
+                        QLOG_INFO() << "1 client disconnected";
                         UDT::epoll_remove_usock(epollFd, sock);
                         UDT::close(sock);
                         setNodeExpired(sock/*, true*/);
@@ -220,7 +220,7 @@ void NetEngine::startServer()
                         //the srv has no state = CONNECTING ,as it should not connect.
                         if(CLOSED == state || BROKEN == state )
                         {
-                            QLOG_INFO() << "client disconnected";
+                            QLOG_INFO() << "2 client disconnected";
                             UDT::epoll_remove_usock(epollFd, sock);
                             UDT::close(sock);
                             setNodeExpired(sock/*, true*/);
@@ -250,6 +250,8 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
     maintenanceTime = clock::now();
     searchTime = clock::now();
     boot_sock = UDT::socket(AF_INET, SOCK_DGRAM, 0);//创建boot_sock
+    //QLOG_ERROR()<<"boot_sock="<<boot_sock;
+    turn_sock = UDT::socket(AF_INET, SOCK_DGRAM, 0);//创建turn_sock
     if(boot_sock < 0)
     {
         QLOG_ERROR() << "UDT socket error" << UDT::getlasterror().getErrorMessage();
@@ -267,6 +269,11 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
         QLOG_ERROR() << "UDT bind error" << UDT::getlasterror().getErrorMessage();
         return ;
     }
+    if(UDT::bind(turn_sock, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0)
+    {
+        QLOG_ERROR() << "UDT bind error" << UDT::getlasterror().getErrorMessage();
+        return ;
+    }
 
     int sock_len = sizeof(local_addr);
     if(UDT::getsockname(boot_sock, (struct sockaddr *)&local_addr, &sock_len) < 0)//获取本地地址，正确返回0。
@@ -274,10 +281,15 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
         QLOG_ERROR() << "UDT getsockname error" << UDT::getlasterror().getErrorMessage();
         return ;
     }
+    if(UDT::getsockname(turn_sock, (struct sockaddr *)&local_addr, &sock_len) < 0)//获取本地地址，正确返回0。
+    {
+        QLOG_ERROR() << "UDT getsockname error" << UDT::getlasterror().getErrorMessage();
+        return ;
+    }
     QLOG_INFO() << "local port = " << ntohs(local_addr.sin_port);
 
     boot_thread_flag = true;
-    boot_thread = std::thread([&, srv_addr]()  //lambda 表达式
+    pool.commit([&, srv_addr]()  //lambda 表达式
                               //与服务器交互的线程
     {
         if(UDT::connect(boot_sock, (struct sockaddr *)&srv_addr, sizeof(srv_addr)) < 0)
@@ -299,6 +311,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
         /*监听套接字的可写，错误*/
         event = UDT_EPOLL_OUT | UDT_EPOLL_ERR;
         UDT::epoll_add_usock(epollFd, boot_sock, &event);
+       // UDT::epoll_add_usock(epollFd, turn_sock, &event);
 
         while(boot_thread_flag)
         {
@@ -352,11 +365,34 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
 
                     if(sock == boot_sock) //服务器连接成功
                     {
-                        //发送GET_NODE命令到服务器
+                        if(isRelay)
+                        {
+                            msgPack sendMsg(self.getId());
+                            int msg_len = sendMsg.pack(config::MsgType::TURN);//发给服务器不用设置dstId
+                            if(msg_len < 0)
+                                continue;
+                            UDT::sendmsg(sock, cbuf, msg_len);
+                            continue;
+                        }
+                            //发送GET_NODE命令到服务器
+                            config::EbcNode self_node;
+                            self_node.set_port_nat(comPortNat(0, self.getNatType()));
+                            msgPack sendMsg(self.getId());
+                            int msg_len = sendMsg.pack(config::MsgType::GET_NODE, 0, &self_node, cbuf, sizeof(cbuf));//发给服务器不用设置dstId
+                            if(msg_len < 0)
+                                continue;
+                            UDT::sendmsg(sock, cbuf, msg_len);
+                            QLOG_ERROR()<<"bootsock = "<<sock;
+                            QLOG_INFO()<<"send get_node";
+
+                    }
+                    else if(sock == turn_sock)
+                    {
+                        //SYM节点发送GET_NODE命令到服务器
                         config::EbcNode self_node;
                         self_node.set_port_nat(comPortNat(0, self.getNatType()));
                         msgPack sendMsg(self.getId());
-                        int msg_len = sendMsg.pack(config::MsgType::GET_NODE, &self_node, cbuf, sizeof(cbuf));//发给服务器不用设置dstId
+                        int msg_len = sendMsg.pack(config::MsgType::GET_NODE, 0, &self_node, cbuf, sizeof(cbuf));//发给服务器不用设置dstId
                         if(msg_len < 0)
                             continue;
                         UDT::sendmsg(sock, cbuf, msg_len);
@@ -444,7 +480,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
             }
         }
     });
-    boot_thread.detach();
+    //boot_thread.detach();
 }
 
 bool NetEngine::sendUserData(NodeId tid, const char *data, const uint32_t sendDataStreamBufferSize)
@@ -458,7 +494,7 @@ bool NetEngine::sendUserData(NodeId tid, const char *data, const uint32_t sendDa
 
     sock = node->getSock();
     msgPack send_msg(self.getId());
-    int ret = send_msg.pack(config::MsgType::SENDDATASTREAM, data, sbuf.data(), sbuf.size(), config::MsgSubType::EMPTY_SUB, sendDataStreamBufferSize);
+    int ret = send_msg.pack(config::MsgType::SENDDATASTREAM,0, data, sbuf.data(), sbuf.size(), config::MsgSubType::EMPTY_SUB, sendDataStreamBufferSize);
     if(ret < 0)
         return false;
     ret = UDT::sendmsg(sock, sbuf.data(), ret);
@@ -478,7 +514,7 @@ bool NetEngine::sendBroadcastData(NodeId tid, const char *data, const uint32_t s
 
     sock = node->getSock();
     msgPack send_msg(self.getId());
-    int ret = send_msg.pack(config::MsgType::SENDBROADDATA, data, sbuf.data(), sbuf.size(), config::MsgSubType::EMPTY_SUB, sendDataStreamBufferSize);
+    int ret = send_msg.pack(config::MsgType::SENDBROADDATA,0, data, sbuf.data(), sbuf.size(),config::MsgSubType::EMPTY_SUB, sendDataStreamBufferSize);
     if(ret < 0)
         return false;
     ret = UDT::sendmsg(sock, sbuf.data(), ret);
@@ -594,13 +630,32 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
 
     if(this->isServer)//作为服务器
     {
-        if(msg.type()==config::MsgType::GET_NODE)//如果服务器收到GET_NODE
+        switch (msg.type())
+        {
+        case config::MsgType::TURN:
+        {
+            int ret1 = recv_msg.pack(config::MsgType::REP,50000, nullptr, nullptr, 0, config::MsgSubType::PORT);
+            if(ret1 < 0)
+                break;
+            memset(buf, 0, BUFSIZE);
+            UDT::sendmsg(sock, buf, ret1);
+            break;
+        }
+        case config::MsgType::GET_NODE://如果服务器收到GET_NODE
         {
             config::EbcNodes nodes;
             if(dstId == srvId)//和服务器通信
             {
                 struct sockaddr_in clientInfo;//客户端的地址
                 uint32_t nat = parNat(msg.nodes().ebcnodes(0).port_nat());//节点端口(网络字节序)和NAT类型
+                if(nat == Node::NatType::SYMMTRIC)
+                {
+                    //think about the port pool;
+
+//                    setSrvAddr(clientInfo,aport);
+                    struct sockaddr_in srvAddr;
+                    bindSrv(srvAddr,50000);
+                }
                 int addr_len = sizeof(clientInfo);
                 UDT::getpeername(sock, (struct sockaddr *)&clientInfo, &addr_len);//存入clientInfo
 
@@ -612,14 +667,14 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                 punch_node.set_port_nat(comPortNat(clientInfo.sin_port, nat));
                 punch_node.set_id(msg.src_id());
                 //             pack(config::MsgType type, void *msg, void *buf, int size,config::MsgSubType subType,const NET::NodeId dstId)
-                ret = send_msg.pack(config::MsgType::PUNCH, &punch_node, buf, BUFSIZE);
-                if(ret < 0)
-                    return;
+                int ret1 = send_msg.pack(config::MsgType::PUNCH,0, &punch_node, buf, BUFSIZE);
+                if(ret1 < 0)
+                    break;
                 //            }
                 //开始查找节点并发送打洞信息
                 if((kad->getNode(srcId).get() != nullptr) && (!kad->getNode(srcId)->isExpired()))
-                    return;
-
+                    break;
+                srcId.printNodeId(1);
                 std::list<Sp<Node>> sendnodes = kad->repNodes(srcId);
                 QLOG_WARN() << "rep node num= " << sendnodes.size();
                 for(auto &node : sendnodes)
@@ -628,7 +683,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                     tmp->set_id(&node->getId(), ID_LENGTH);
                     tmp->set_ip(node->getAddr().getIPv4().sin_addr.s_addr);
                     tmp->set_port_nat(comPortNat(node->getAddr().getIPv4().sin_port, node->getNatType()));
-                    ret = UDT::sendmsg(node->getSock(), buf, ret);
+                    int ret2 = UDT::sendmsg(node->getSock(), buf, ret1);
                     //QLOG_WARN() << "PUNCH ret = " << ret;
                     node->getId().printNodeId(1);
                 }
@@ -640,21 +695,24 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                 sockNodePair[sock] = clinode;
                 appendBucket(clinode);
                 memset(buf, 0, BUFSIZE);
-                ret = recv_msg.pack(config::MsgType::REP, &nodes, buf, BUFSIZE, config::MsgSubType::NODE, 0, srcId); //NodeId 没有传，因为string 转array没实现，注意!!
-                if(ret < 0)
-                    return ;
-                UDT::sendmsg(sock, buf, ret);
+                int ret3 = recv_msg.pack(config::MsgType::REP,0, &nodes, buf, BUFSIZE, config::MsgSubType::NODE, 0, srcId); //NodeId 没有传，因为string 转array没实现，注意!!
+                if(ret3 < 0)
+                    break ;
+                UDT::sendmsg(sock, buf, ret3);
+                break;
             }
             else //服务器turn
             {
-               turn(dstId,ret);
-
+                turn(dstId,ret);
+                break;
             }
 
         }
-        else //服务器turn
+        default : //服务器turn
         {
             turn(dstId,ret);
+            break;
+        }
         }
 
     }
@@ -677,8 +735,8 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
             punch_node.set_ip(peerInfo.sin_addr.s_addr);
             punch_node.set_port_nat(comPortNat(peerInfo.sin_port, nat));
             punch_node.set_id(msg.src_id());
-            ret = send_msg.pack(config::MsgType::PUNCH, &punch_node, buf, BUFSIZE);//PUNCH无dstId
-            if(ret < 0)
+            int ret1 = send_msg.pack(config::MsgType::PUNCH, 0,&punch_node, buf, BUFSIZE);//PUNCH无dstId
+            if(ret1 < 0)
                 break;
 
             //开始查找节点并发送打洞信息
@@ -696,13 +754,13 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                 tmp->set_id(&node->getId(), ID_LENGTH);
                 tmp->set_ip(node->getAddr().getIPv4().sin_addr.s_addr);
                 tmp->set_port_nat(comPortNat(node->getAddr().getIPv4().sin_port, node->getNatType()));
-                UDT::sendmsg(node->getSock(), buf, ret);
+                UDT::sendmsg(node->getSock(), buf, ret1);
             }
             memset(buf, 0, BUFSIZE);
-            ret = recv_msg.pack(config::MsgType::REP, &nodes, buf, BUFSIZE, config::MsgSubType::NODE, 0, srcId); //NodeId 没有传，因为string 转array没实现，注意!!
-            if(ret < 0)
+            int ret2 = recv_msg.pack(config::MsgType::REP, 0, &nodes, buf, BUFSIZE, config::MsgSubType::NODE, 0, srcId); //NodeId 没有传，因为string 转array没实现，注意!!
+            if(ret2 < 0)
                 return ;
-            UDT::sendmsg(sock, buf, ret);
+            UDT::sendmsg(sock, buf, ret2);
             break;
         }
 
@@ -718,8 +776,8 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
             punch_node.set_ip(msgNode->getAddr().getIPv4().sin_addr.s_addr);
             punch_node.set_port_nat(comPortNat(msgNode->getAddr().getIPv4().sin_port, msgNode->getNatType()));
             punch_node.set_id(msg.src_id());
-            ret = send_msg.pack(config::MsgType::PUNCH, &punch_node, buf, BUFSIZE);
-            if(ret < 0)
+            int ret1 = send_msg.pack(config::MsgType::PUNCH,0, &punch_node, buf, BUFSIZE);
+            if(ret1 < 0)
                 break;
             //config::EbcNode searchernode;
             config::EbcNodes nodes;
@@ -727,12 +785,13 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
             datanodes.set_tid(msg.msg().tid());
             if(kad->findNode(searchId))//找到data
             {
+                QLOG_WARN()<<"find the tid in handmsg";
                 auto node = kad->getNode(searchId);
                 auto tmp = nodes.add_ebcnodes();
                 tmp->set_id(&(node->getId()), ID_LENGTH);
                 tmp->set_ip(node->getAddr().getIPv4().sin_addr.s_addr);
                 tmp->set_port_nat(comPortNat(node->getAddr().getIPv4().sin_port, node->getNatType()));
-                UDT::sendmsg(node->getSock(), buf, ret);
+                UDT::sendmsg(node->getSock(), buf, ret1);
             }
             else
             {
@@ -749,15 +808,15 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                     tmp->set_id(&(node->getId()), ID_LENGTH);
                     tmp->set_ip(node->getAddr().getIPv4().sin_addr.s_addr);
                     tmp->set_port_nat(comPortNat(node->getAddr().getIPv4().sin_port, node->getNatType()));
-                    UDT::sendmsg(node->getSock(), buf, ret);
+                    UDT::sendmsg(node->getSock(), buf, ret1);
                 }
             }
             datanodes.mutable_nodes()->CopyFrom(nodes);
             memset(buf, 0, BUFSIZE);
-            ret = recv_msg.pack(config::MsgType::REP, &datanodes, buf, BUFSIZE, config::MsgSubType::DATA,0,srcId);
-            if(ret < 0)
+            int ret2 = recv_msg.pack(config::MsgType::REP,0, &datanodes, buf, BUFSIZE, config::MsgSubType::DATA,0,srcId);
+            if(ret2 < 0)
                 return ;
-            UDT::sendmsg(sock, buf, ret);
+            UDT::sendmsg(sock, buf, ret2);
             break;
         }
         case config::MsgType::REP ://此处需要把接收的服务器发来的节点进行打洞  此处不需要改动
@@ -944,6 +1003,20 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
                     }
                 }
             }
+            else if(config::MsgSubType::PORT == msg.sub_type())
+            {
+                //connect 服务器分配的转发端口
+                uint32_t aport = msg.port();
+                struct sockaddr_in srv_turn;
+                setSrvAddr(srv_turn,aport);
+                if(UDT::connect(boot_sock, (struct sockaddr *)&srv_turn, sizeof(srv_turn)) < 0)
+                {
+                    QLOG_ERROR() << "UDT boot socket connect error" << UDT::getlasterror().getErrorMessage();
+                    return ;
+                }
+
+                QLOG_INFO() << "srv info" << inet_ntoa(srv_turn.sin_addr) << "@" << htons(srv_turn.sin_port);
+            }
             break;
         }
         case config::MsgType::PUNCH:
@@ -1058,6 +1131,26 @@ int NetEngine::startPunch(int& epollFd, uint32_t ip, uint16_t port)//对端的IP
 bool NetEngine::appendBucket(const Sp<Node> &node)
 {
     return kad->onNewNode(node, 2, isServer); //judge if appendbucket success
+}
+
+void NetEngine::setSrvAddr(sockaddr_in srv, uint32_t aport)
+{
+    srv.sin_family = AF_INET;
+    srv.sin_addr.S_un.S_addr = inet_addr(srvip.c_str());
+    srv.sin_port = htons(aport);
+}
+
+void NetEngine::bindSrv(sockaddr_in srv_addr, uint32_t port)
+{
+    srv_addr.sin_addr.s_addr = INADDR_ANY;
+    srv_addr.sin_port = htons(port);
+    srv_addr.sin_family = AF_INET;
+    if(UDT::bind(srv, (struct sockaddr*)&srv_addr, sizeof(srv_addr)) < 0)//bind创建的srv
+    {
+        QLOG_ERROR() << "UDT bind server error" << UDT::getlasterror().getErrorMessage();
+        return ;
+    }
+
 }
 
 void NetEngine::turn(NodeId dstId, int ret)
@@ -1191,7 +1284,7 @@ void NetEngine::eraseNodeExpired(const UDTSOCKET &sock)
     }
   }
 
-bool NetEngine::getUserDate(std::string &data)
+bool NetEngine::getUserData(std::string &data)
 {
     if(userData.empty())
         return false;

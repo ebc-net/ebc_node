@@ -125,7 +125,7 @@ uint32_t ebcMP2PNetworkAPI::getReceiveDataStream(char *receiveDataStreamBuffer, 
 {	
 //    printf("start receive\n");
     std::string data;
-    if(!engine->getUserDate(data))
+    if(!engine->getUserData(data))
         return 0;
     uint32_t len = (data.size() > receiveDataStreamBufferSize)?receiveDataStreamBufferSize:data.size();
     memcpy(receiveDataStreamBuffer, data.data(), len);

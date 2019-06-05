@@ -11,13 +11,14 @@ msgPack::msgPack(const NET::NodeId &_id):self_id(_id)
     ebcMsg.Clear();
 }
 
-int msgPack::pack(config::MsgType type,const void *msg, void *buf, int size,config::MsgSubType subType,int msgSize,NodeId dstId)
+int msgPack::pack(config::MsgType type,int aport, const void *msg, void *buf, int size,config::MsgSubType subType,int msgSize,NodeId dstId)
 {
     ebcMsg.set_head(msgHead);//0xF5FA
     ebcMsg.set_version(NET_VERSION);//V0.0.0
     ebcMsg.set_src_id(&self_id, ID_LENGTH);
     ebcMsg.set_type(type);//EMPTY = 0,GET_NODE = 1,GET_DATA = 2,PING = 3,HEART = 4,REP = 5,PUNCH = 6,
-//    ebcMsg.set_dst_id(&dstId, ID_LENGTH);
+    ebcMsg.set_dst_id(&dstId, ID_LENGTH);
+    ebcMsg.set_port(aport);
 
     switch (type) {
     case config::MsgType::GET_NODE :

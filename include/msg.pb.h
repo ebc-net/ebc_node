@@ -73,14 +73,15 @@ namespace config {
 
 enum MsgType {
   EMPTY = 0,
-  GET_NODE = 1,
-  GET_DATA = 2,
-  PING = 3,
-  HEART = 4,
-  REP = 5,
-  PUNCH = 6,
-  SENDDATASTREAM = 7,
-  SENDBROADDATA = 8,
+  TURN = 1,
+  GET_NODE = 2,
+  GET_DATA = 3,
+  PING = 4,
+  HEART = 5,
+  REP = 6,
+  PUNCH = 7,
+  SENDDATASTREAM = 8,
+  SENDBROADDATA = 9,
   MsgType_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::google::protobuf::int32>::min(),
   MsgType_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::google::protobuf::int32>::max()
 };
@@ -94,7 +95,8 @@ enum MsgSubType {
   PONG = 1,
   NODE = 2,
   DATA = 3,
-  DATASTREAM = 4,
+  PORT = 4,
+  DATASTREAM = 5,
   MsgSubType_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::google::protobuf::int32>::min(),
   MsgSubType_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::google::protobuf::int32>::max()
 };
@@ -658,11 +660,11 @@ class EbcMsg final :
   ::google::protobuf::uint32 head() const;
   void set_head(::google::protobuf::uint32 value);
 
-  // uint32 ttl = 5;
-  void clear_ttl();
-  static const int kTtlFieldNumber = 5;
-  ::google::protobuf::uint32 ttl() const;
-  void set_ttl(::google::protobuf::uint32 value);
+  // uint32 port = 5;
+  void clear_port();
+  static const int kPortFieldNumber = 5;
+  ::google::protobuf::uint32 port() const;
+  void set_port(::google::protobuf::uint32 value);
 
   // uint32 id = 6;
   void clear_id();
@@ -740,7 +742,7 @@ class EbcMsg final :
   ::google::protobuf::internal::ArenaStringPtr src_id_;
   ::google::protobuf::internal::ArenaStringPtr dst_id_;
   ::google::protobuf::uint32 head_;
-  ::google::protobuf::uint32 ttl_;
+  ::google::protobuf::uint32 port_;
   ::google::protobuf::uint32 id_;
   int type_;
   int sub_type_;
@@ -1287,18 +1289,18 @@ inline void EbcMsg::set_allocated_dst_id(::std::string* dst_id) {
   // @@protoc_insertion_point(field_set_allocated:config.EbcMsg.dst_id)
 }
 
-// uint32 ttl = 5;
-inline void EbcMsg::clear_ttl() {
-  ttl_ = 0u;
+// uint32 port = 5;
+inline void EbcMsg::clear_port() {
+  port_ = 0u;
 }
-inline ::google::protobuf::uint32 EbcMsg::ttl() const {
-  // @@protoc_insertion_point(field_get:config.EbcMsg.ttl)
-  return ttl_;
+inline ::google::protobuf::uint32 EbcMsg::port() const {
+  // @@protoc_insertion_point(field_get:config.EbcMsg.port)
+  return port_;
 }
-inline void EbcMsg::set_ttl(::google::protobuf::uint32 value) {
+inline void EbcMsg::set_port(::google::protobuf::uint32 value) {
   
-  ttl_ = value;
-  // @@protoc_insertion_point(field_set:config.EbcMsg.ttl)
+  port_ = value;
+  // @@protoc_insertion_point(field_set:config.EbcMsg.port)
 }
 
 // uint32 id = 6;

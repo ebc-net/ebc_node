@@ -51,7 +51,7 @@ void closeNetwork();
     
   // （4）加入一个指定的节点到网络函数
 //  bool joinNodeToNetwork(const char *joinNodeAddress);
-    bool joinNodeToNetwork(const char *joinNodeAddress);
+    bool joinNodeToNetwork(const char *joinNodeAddress);//信号量解决此问题
   // （5）断开网络中一个指定的节点函数
   bool breakNodeFromNetwork(const char *breakNodeAddress);
      

@@ -12,6 +12,7 @@
 #include "ebcCryptoLib.h"
 #include "QsLog.h"
 
+
 #ifdef ON_QT
 #include <QCoreApplication>
 #include <QGuiApplication>
@@ -140,11 +141,6 @@ int main(int argc, char *argv[])
     Cout::instance();
     QLOG_INFO() << "Program started ";
 #endif
-//    NET::NodeId id;
-//    getRandom(id.data(), 24);
-//    id.at(0) = 'e';
-//    id.at(1) = 'b';
-//    id.at(2) = 'c';
     ebcCryptoLib cl;
     NET::NodeId id;
     cl.randomNbytes(id.data(), ID_LENGTH);
@@ -214,7 +210,7 @@ int main(int argc, char *argv[])
         std::string buf;
         while(1)
         {
-            int ret = net.getUserDate(buf);
+            int ret = net.getUserData(buf);
             if(ret)
             {
 
@@ -235,3 +231,31 @@ int main(int argc, char *argv[])
 #endif
 
 }
+//#include "threadpool.h"
+//#include <iostream>
+//#include <QCoreApplication>
+
+
+//int main(int argc, char *argv[])
+//{
+//  // QCoreApplication a(argc, argv);
+//   NET::threadpool pool;
+//   std::vector <std::future<int>> results;
+//   for(int i = 0; i<8; i++)
+//   {
+//       results.emplace_back
+//      (pool.commit([i]{
+//           std::cout<<"hello"<<i<<std::endl;
+//           std::this_thread::sleep_for(std::chrono::seconds(1));
+//           std::cout<<"world"<<i<<std::endl;
+//           return i*i;
+//          })
+//       );
+//   }
+//   for(auto&& result:results)
+//       std::cout<<result.get()<<"";
+//    std::cout<<std::endl;
+// //    return a.exec();
+//    return 0;
+
+//}

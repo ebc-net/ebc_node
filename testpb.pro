@@ -140,6 +140,7 @@ DEPENDPATH += $$PWD/include
 HEADERS += \
     include/msg.pb.h \
     include/node.h \
+    include/threadpool.h \
     include/udt.h \
     include/sockaddr.h \
     include/bucket.h \
