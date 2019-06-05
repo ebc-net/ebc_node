@@ -365,6 +365,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
 
                     if(sock == boot_sock) //服务器连接成功
                     {
+                      #ifdef ON_QT
                         if(isRelay)
                         {
                             msgPack sendMsg(self.getId());
@@ -374,6 +375,7 @@ void NetEngine::startClient(const std::string ip, const uint16_t port)//指定�
                             UDT::sendmsg(sock, cbuf, msg_len);
                             continue;
                         }
+#endif
                             //发送GET_NODE命令到服务器
                             config::EbcNode self_node;
                             self_node.set_port_nat(comPortNat(0, self.getNatType()));
@@ -1136,7 +1138,7 @@ bool NetEngine::appendBucket(const Sp<Node> &node)
 void NetEngine::setSrvAddr(sockaddr_in srv, uint32_t aport)
 {
     srv.sin_family = AF_INET;
-    srv.sin_addr.S_un.S_addr = inet_addr(srvip.c_str());
+    srv.sin_addr.s_addr = inet_addr(srvip.c_str());
     srv.sin_port = htons(aport);
 }
 

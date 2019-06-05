@@ -424,11 +424,11 @@ std::list<Sp<Node>> Bucket::broadcastOthers(const NodeId &sourceId)
         }
         if(it->first != n->first && (int(depth(n)-1) == dep))
         {
-            for(auto &n : n->nodes)
+            for(auto &n1 : n->nodes)
             {
-                if(!n->isExpired())
+                if(!n1->isExpired())
                 {
-                    returnNodes.push_back(n);
+                    returnNodes.push_back(n1);
                     insertNum++;
                     dep++;
                     break;
