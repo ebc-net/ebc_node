@@ -26,7 +26,7 @@ public:
     typedef enum _NatType
     {
         EMPTY = 0,
-        FULL_CLONE , //全克隆
+        FULL_CLONE, //全克隆
         RESTRICT , //限制型
         PORT_RESTRICT , //端口限制
         SYMMTRIC,   //对称型
@@ -34,8 +34,8 @@ public:
 
 
     /*******************************function*****************/
-    Node():id(), state(CONNECTED), nat(EMPTY){}
-    Node(const NodeId & _id, const SockAddr _addr=nullptr, const NatType _nat= EMPTY, const NodeState  _state=CONNECTED);
+    Node():id(), state(CONNECTED), nat(SYMMTRIC){}
+    Node(const NodeId & _id, const SockAddr _addr=nullptr, const NatType _nat=SYMMTRIC, const NodeState  _state=CONNECTED);
 
     const NodeId& getId();
 
