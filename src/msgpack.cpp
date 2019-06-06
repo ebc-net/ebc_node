@@ -11,7 +11,7 @@ msgPack::msgPack(const NET::NodeId &_id):self_id(_id)
     ebcMsg.Clear();
 }
 
-int msgPack::pack(config::MsgType type,int aport, const void *msg, void *buf, int size,config::MsgSubType subType,int msgSize,NodeId dstId)
+int msgPack::pack(config::MsgType type, const void *msg, void *buf, int aport,int size,config::MsgSubType subType,int msgSize,NodeId dstId)
 {
     ebcMsg.set_head(msgHead);//0xF5FA
     ebcMsg.set_version(NET_VERSION);//V0.0.0
@@ -66,6 +66,12 @@ int msgPack::pack(config::MsgType type,int aport, const void *msg, void *buf, in
         ebcMsg.set_ebcdata(msg, msgSize);
         ebcMsg.set_length(msgSize);
         break;
+    }
+    case config::MsgType::SENDBROADDATA:
+    {
+        ebcMsg.set_ebcdata(msg, msgSize);
+        ebcMsg.set_length(msgSize);
+
     }
     default:
         break;

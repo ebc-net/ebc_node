@@ -125,5 +125,14 @@ void logSignal::deleteNode(QString _id)
 
 }
 
+void logSignal::broadcast()
+{
+    QLOG_INFO()<<"broadcast.....";
+    char p[] = "123456789";
+    eng->brocastMsg(kad->getSelfId(), p, sizeof (p));
+    QLOG_INFO()<<"broadcast over!";
+
+}
+
 
 #endif

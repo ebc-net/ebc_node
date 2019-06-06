@@ -38,6 +38,7 @@ public:
     std::vector<Sp<Node>> findClosestNodes(const NodeId& id, size_t count = MAX_NODE);
     NodeId randomId(const Kbucket::const_iterator &bucket);
     unsigned depth(const Kbucket::const_iterator& bucket) const;
+    int xorDepth(const NodeId &);
     std::list<Sp<Node>> repNodes(const NodeId &id);
     std::list<Sp<Node>> broadcastOthers(const NodeId &);
     std::list<Sp<Node>> broadcastLocal();
