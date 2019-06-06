@@ -117,6 +117,27 @@ unsigned Bucket::depth(const Kbucket::const_iterator& it) const
     return std::max(bit1, bit2)+1;
 }
 
+int Bucket::xorDepth(const NodeId &sourceId)
+{
+    int dep = 0;
+    for(unsigned i = 0; i < ID_LENGTH - 4; ++i)
+    {
+        if(sourceId[i] == selfId[i])
+            continue;
+        unsigned char _xor = sourceId[i] ^ selfId[i];
+        for(int j = 0; j < 8; ++j)
+        {
+            if(_xor & (0x80 >> j))
+            {
+                dep = j + 8 * i + 1;
+                QLOG_INFO()<<"i="<<i<<"j="<<j;
+                return dep;
+            }
+        }
+    }
+    return dep;
+}
+
 //判断是否在bucket中
 bool Bucket::contains(const Kbucket::const_iterator &it, const NodeId &id) const
 {
@@ -400,8 +421,7 @@ std::list<Sp<Node>> Bucket::repNodes(const NodeId &id)
 
 std::list<Sp<Node>> Bucket::broadcastOthers(const NodeId &sourceId)
 {
-    int insertNum = 0;
-    int dep = -1;
+    int dep = 0;
     std::list<Sp<Node>> returnNodes{};
     if(bucketIsEmpty(selfId))
     {
@@ -409,44 +429,48 @@ std::list<Sp<Node>> Bucket::broadcastOthers(const NodeId &sourceId)
         return returnNodes;
     }
     auto it = findBucket(selfId);
-    for(unsigned i = 0; i < ID_LENGTH; ++i)
-    {
-        if(sourceId[i] == selfId[i])
-            continue;
-        auto _xor = sourceId[i] ^ selfId[i];
-        for(int j = 0; j < 8; ++j)
-        {
-            if(_xor & (0x80 >> j))
-            {
-                dep = j + 8 * i;
-                break;
-            }
-        }
-    }
-    for(auto n = buckets.begin();; ++n)
+    dep = xorDepth(sourceId);
+    sourceId.printNodeId();
+    selfId.printNodeId();
+    QLOG_INFO()<<"dep = "<<dep;
+    QLOG_INFO()<<"depth = "<<depth(it);
+    int tmp = dep;
+    for(auto n = buckets.begin(); dep < static_cast<int>(depth(it)); ++n)
     {
         if(n == buckets.end())
+        {
+            if(dep == tmp)
+            {
+                dep++;
+            }
+            QLOG_ERROR()<<"dep = "<<dep<<" has no node";
+            tmp = dep;
             n = buckets.begin();
+        }
         if(n->nodes.empty())
         {
-            QLOG_ERROR()<<"bucket   "<<n->first.toString().c_str()<<"  is empty!";
+            n->first.printNodeId(1);
+            QLOG_ERROR()<<"bucket  is empty!";
             continue;
         }
-        if(it->first != n->first && (int(depth(n)-1) == dep))
+        if(it->first != n->first)
         {
-            for(auto &n1 : n->nodes)
+            int nDep = xorDepth(n->first);
+            if(nDep == dep + 1)
             {
-                if(!n1->isExpired())
+                for(auto &n1 : n->nodes)
                 {
-                    returnNodes.push_back(n1);
-                    insertNum++;
-                    dep++;
-                    break;
+                    if(!n1->isExpired())
+                    {
+                        returnNodes.push_back(n1);
+                        dep++;
+                        n1->getId().printNodeId();
+                        QLOG_INFO()<<"dep == "<<dep;
+                        break;
+                    }
                 }
             }
         }
-        if(dep == int(depth(it)-1))
-            break;
     }
     return returnNodes;
 }
@@ -535,54 +559,61 @@ void Bucket::delExpNode()
 
 void Bucket::delEmpBuk()
 {
-    for(auto b = buckets.begin(); b != buckets.end();)
+    bool unfinish = true;
+    while(unfinish)
     {
-        if(b->nodes.size() == 0)
+        unfinish = false;
+        for(auto b = buckets.begin(); b != buckets.end();)
         {
-            if(b == buckets.begin())
+            if(b->nodes.size() == 0)
             {
-                b++;
-                continue;
-            }
-            int bit1 = std::prev(b)->first.lowBit();
-            int bit2 = b->first.lowBit();
-            int bit3 = std::next(b) != buckets.end() ? std::next(b)->first.lowBit() : -1;
-            if(bit1 < bit2 && bit2 > bit3)
-            {
-                auto itt = b++;
-                buckets.erase(itt);
-            }
-            else if(bit2 < bit3)
-            {
-                if(bit3 != -1)
+                if(b == buckets.begin())
                 {
-                    auto bit4 = std::next(std::next(b)) != buckets.end() ? std::next(std::next(b))->first.lowBit() : -1;
-                    if(bit3 < bit4)
-                    {
-                        b++;
-                        continue;
-                    }
-                    else if(bit3 == bit4)
-                    {
-                        QLOG_ERROR()<<"delete empty bucket first lowbit error2";
-                        return;
-                    }
+                    b++;
+                    continue;
                 }
-                std::next(b)->nodes.splice(b->nodes.begin(), b->nodes);
-                b++;
-                auto itt = b++;
-                buckets.erase(itt);
-            }
-            else if (bit2 == bit3)
-            {
-                QLOG_ERROR()<<"delete empty bucket first lowbit error";
-                return;
+                int bit1 = std::prev(b)->first.lowBit();
+                int bit2 = b->first.lowBit();
+                int bit3 = std::next(b) != buckets.end() ? std::next(b)->first.lowBit() : -1;
+                if(bit1 < bit2 && bit2 > bit3)
+                {
+                    auto itt = b++;
+                    buckets.erase(itt);
+                    unfinish = true;
+                }
+                else if(bit2 < bit3)
+                {
+                    if(bit3 != -1)
+                    {
+                        auto bit4 = std::next(std::next(b)) != buckets.end() ? std::next(std::next(b))->first.lowBit() : -1;
+                        if(bit3 < bit4)
+                        {
+                            b++;
+                            continue;
+                        }
+                        else if(bit3 == bit4)
+                        {
+                            QLOG_ERROR()<<"delete empty bucket first lowbit error2";
+                            return;
+                        }
+                    }
+                    std::next(b)->nodes.splice(b->nodes.begin(), b->nodes);
+                    b++;
+                    auto itt = b++;
+                    buckets.erase(itt);
+                    unfinish = true;
+                }
+                else if (bit2 == bit3)
+                {
+                    QLOG_ERROR()<<"delete empty bucket first lowbit error";
+                    return;
+                }
+                else
+                    b++;
             }
             else
                 b++;
         }
-        else
-            b++;
     }
     QLOG_WARN()<<"out of for! delempbuk!";
 

@@ -182,6 +182,18 @@ Window
             data_stream.text = ""
         }
     }
+
+    Button
+    {
+        id: broadcast_btn
+        anchors.bottom: deletenode.top
+        anchors.right: deletenode.right
+        text: "broadcast"
+        onClicked:
+        {
+            log.broadcast();
+        }
+    }
 //    Button
 //    {
 //        id: egg

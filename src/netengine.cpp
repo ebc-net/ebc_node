@@ -597,7 +597,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
         //作为服务端时，就从客户端节点取节点信息
         if(this->isServer)//this指针来访问自己的地址,如果服务器收到GET_NODE
         {
-
+             QLOG_WARN() << "type:GET_NODE";
             struct sockaddr_in clientInfo;//客户端的地址
             uint32_t nat = parNat(msg.nodes().ebcnodes(0).port_nat());//节点端口(网络字节序)和NAT类型
             int addr_len = sizeof(clientInfo);
@@ -642,6 +642,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
         }
         else //peer收到GET_NODE后的动作
         {
+             QLOG_WARN() << "type:GET_NODE";
             struct sockaddr_in peerInfo;//对端节点的信息
             uint32_t nat = parNat(msg.nodes().ebcnodes(0).port_nat());//节点端口(网络字节序)和NAT类型
             int addr_len = sizeof(peerInfo);
@@ -742,6 +743,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
     {
         if(config::MsgSubType::NODE == msg.sub_type())
         {
+             QLOG_WARN() << "type:REP_NODE";
             config::EbcNodes nodes = msg.nodes();
             config::EbcNode node;
             int node_count = nodes.ebcnodes_size();
@@ -798,6 +800,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
         }
         else if(config::MsgSubType::DATA == msg.sub_type())
         {
+             QLOG_WARN() << "type:GET_DATA";
             QLOG_WARN() << "!!!!!!!!!!"; //1
             config::search sr = msg.msg();
             config::EbcNode node;
@@ -927,6 +930,7 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
     }
     case config::MsgType::PUNCH:
     {
+        QLOG_WARN() << "type:PUNCH";
         config::EbcNodes nodes = msg.nodes();
         config::EbcNode node;
         node = nodes.ebcnodes(0);
@@ -980,6 +984,18 @@ void NetEngine::handleMsg(UDTSOCKET sock, int epollFd)//handleMsg(sock）
         QLOG_INFO()<<"userData size:"<<getUserDataListSize();
         break;
     }
+    case config::MsgType::SENDBROADDATA:
+    {
+        config::search sr = msg.msg();
+        config::EbcNode node;
+        auto& tmpStr = msg.ebcdata();
+        userData.emplace_back(tmpStr);
+        QLOG_INFO()<<"receive msg len: "<<tmpStr.size()<<"  msg:"<<tmpStr.c_str();
+        QLOG_INFO()<<"userData size:"<<getUserDataListSize();
+        brocastMsg(msg.src_id(), msg.ebcdata().c_str(), static_cast<unsigned int>(tmpStr.size()));
+        break;
+    }
+
     default:
         break;
     }
@@ -1147,7 +1163,7 @@ void NetEngine::eraseNodeExpired(const UDTSOCKET &sock)
     }
 }
 
-bool NetEngine::getUserDate(std::string &data)
+bool NetEngine::getUserData(std::string &data)
 {
     if(userData.empty())
         return false;

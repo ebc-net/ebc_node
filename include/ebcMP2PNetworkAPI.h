@@ -32,39 +32,39 @@ class ebcMP2PNetworkAPI
 {
 
 private:
-NET::NetEngine *engine;
-int initCount = 0;
+    NET::NetEngine *engine;
+    int initCount = 0;
 public:
     ebcMP2PNetworkAPI();
     ~ebcMP2PNetworkAPI();
-	// （1）创建网络函数
-  bool createNetwork(const char *nodeAddress);
+    // （1）创建网络函数
+    bool createNetwork(const char *nodeAddress);
 
-  // （1）创建网络函数
-void closeNetwork();
+    // （1）创建网络函数
+    void closeNetwork();
 
-  // （2）刷新网络函数
-  bool updateNetwork();
+    // （2）刷新网络函数
+    bool updateNetwork();
 
-  // （3）读取网络表函数
-  void getNetworkTable(NETWORK_DOMAIN_TABLE *networkTable);
+    // （3）读取网络表函数
+    void getNetworkTable(NETWORK_DOMAIN_TABLE *networkTable);
     
-  // （4）加入一个指定的节点到网络函数
-//  bool joinNodeToNetwork(const char *joinNodeAddress);
+    // （4）加入一个指定的节点到网络函数
+    //  bool joinNodeToNetwork(const char *joinNodeAddress);
     bool joinNodeToNetwork(const char *joinNodeAddress);
-  // （5）断开网络中一个指定的节点函数
-  bool breakNodeFromNetwork(const char *breakNodeAddress);
-     
-  // （6）由源地址发送数据流到目标地址函数
-  bool sendDataStream(const char *sourceNodeAddress, const char *targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize);
-    
-  // （7）从网络接收数据流中读取数据函数
-  uint32_t getReceiveDataStream(char *receiveDataStreamBuffer, uint32_t receiveDataStreamBufferSize);
-  // （9）读取接收数据包消息函数
-  uint16_t getReceiveDataPackageMessage();
+    // （5）断开网络中一个指定的节点函数
+    bool breakNodeFromNetwork(const char *breakNodeAddress);
 
-  // （10）广播消息给全网
-  void broadcastMessage(const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize);
+    // （6）由源地址发送数据流到目标地址函数
+    bool sendDataStream(const char *sourceNodeAddress, const char *targetNodeAddress, const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize);
+    
+    // （7）从网络接收数据流中读取数据函数
+    uint32_t getReceiveDataStream(char *receiveDataStreamBuffer, uint32_t receiveDataStreamBufferSize);
+    // （9）读取接收数据包消息函数
+    uint16_t getReceiveDataPackageMessage();
+
+    // （10）广播消息给全网
+    void broadcastMessage(const char *sendDataStreamBuffer, const uint32_t sendDataStreamBufferSize);
 };
 
 /*** end of file **************************************************************/

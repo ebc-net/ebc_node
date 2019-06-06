@@ -66,6 +66,12 @@ int msgPack::pack(config::MsgType type,const void *msg, void *buf, int size,conf
         ebcMsg.set_length(msgSize);
         break;
     }
+    case config::MsgType::SENDBROADDATA:
+    {
+        ebcMsg.set_ebcdata(msg, msgSize);
+        ebcMsg.set_length(msgSize);
+
+    }
     default:
         break;
     }

@@ -45,7 +45,7 @@ public:
     void setNodeExpired(const UDTSOCKET& sock/*, bool isServer = false*/);
     void eraseNodeExpired(const UDTSOCKET& sock/*, bool isServer = false*/);
 
-    bool getUserDate(std::string & data);
+    bool getUserData(std::string & data);
     bool joinNetwork(const std::string joinNetworkNodeAddress);
     bool getBucket(std::list<std::string> &_bucketList);
     bool eraseNode(const std::string breakNetworkNodeAddress);

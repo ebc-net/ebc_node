@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
         std::string buf;
         while(1)
         {
-            int ret = net.getUserDate(buf);
+            int ret = net.getUserData(buf);
             if(ret)
             {
 
