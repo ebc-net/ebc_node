@@ -73,7 +73,7 @@ void NetEngine::NetInit(const NodeId _id, Sp<Bucket> _kad, const bool _isServer)
         searchNode.set_isid(true);
         searchNode.set_tid(&tId, ID_LENGTH);
         msgPack sendMsg(self.getId());
-        int msg_len = sendMsg.pack(config::MsgType::GET_DATA, &searchNode, send_buf, sizeof(send_buf),0,config::MsgSubType::EMPTY_SUB, 0, dstNode->getId());//只传ID去
+        int msg_len = sendMsg.pack(config::MsgType::GET_DATA, &searchNode, send_buf, sizeof(send_buf));//只传ID去
         if(msg_len < 0)
         {
             QLOG_ERROR() << "SendSearchNode msglen error";
@@ -90,7 +90,7 @@ void NetEngine::NetInit(const NodeId _id, Sp<Bucket> _kad, const bool _isServer)
         targetNode.set_id(targetId.toString());
         msgPack sendMsg(self.getId());
 
-        int msg_len = sendMsg.pack(config::MsgType::GET_NODE, &targetNode, fbuf, sizeof(fbuf),0,config::MsgSubType::EMPTY_SUB,0,dstNode->getId());//只传ID去
+        int msg_len = sendMsg.pack(config::MsgType::GET_NODE, &targetNode, fbuf, sizeof(fbuf));//只传ID去
         if(msg_len < 0)
             return ;
         UDT::sendmsg(dstNode->getSock(), fbuf, msg_len);
@@ -458,7 +458,7 @@ bool NetEngine::sendUserData(NodeId tid, const char *data, const uint32_t sendDa
 
     sock = node->getSock();
     msgPack send_msg(self.getId());
-    int ret = send_msg.pack(config::MsgType::SENDDATASTREAM, data, sbuf.data(), sbuf.size(), 0,config::MsgSubType::EMPTY_SUB, sendDataStreamBufferSize);
+    int ret = send_msg.pack(config::MsgType::SENDDATASTREAM, data, sbuf.data(), sbuf.size(), config::MsgSubType::EMPTY_SUB, sendDataStreamBufferSize/*,tid*/);
     if(ret < 0)
         return false;
     ret = UDT::sendmsg(sock, sbuf.data(), ret);
@@ -478,7 +478,7 @@ bool NetEngine::sendBroadcastData(NodeId tid, const char *data, const uint32_t s
 
     sock = node->getSock();
     msgPack send_msg(self.getId());
-    int ret = send_msg.pack(config::MsgType::SENDBROADDATA,data, sbuf.data(), sbuf.size(),0, config::MsgSubType::EMPTY_SUB, sendDataStreamBufferSize);
+    int ret = send_msg.pack(config::MsgType::SENDBROADDATA, data, sbuf.data(), sbuf.size(),config::MsgSubType::EMPTY_SUB, sendDataStreamBufferSize);
     if(ret < 0)
         return false;
     ret = UDT::sendmsg(sock, sbuf.data(), ret);
